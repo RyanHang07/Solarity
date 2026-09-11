@@ -1,5 +1,6 @@
 import { test, expect, type Browser } from "@playwright/test"
 import {
+  clearRateLimits,
   createCircleViaApi,
   deleteE2ECircles,
   findCircleByName,
@@ -46,6 +47,27 @@ async function circleOnAStreakWithAJoiner(browser: Browser) {
 
   return { name, circleId: groupId, ownerPage, joinerPage, ownerContext, joinerContext }
 }
+
+/**
+ * **This file joins a Circle in every test, and joining is metered.**
+ *
+ * `joinCircle` is 10 an hour keyed by the joiner's user id, and the joiner is
+ * one real account shared by every spec in the suite. `/join/[token]` spends a
+ * second budget on top — `inviteAttempt`, 20 an hour, keyed by client IP, which
+ * localhost gives every request identically.
+ *
+ * Without this the suite degrades across a working session rather than failing:
+ * the first run passes, the third run fails here, and the failure arrives as
+ * "the click did nothing" because a refusal renders as an alert beside a button
+ * that is still there. That is the shape that cost the last three runs.
+ *
+ * `invite.spec.ts` has always done this. The comment on `clearRateLimits` says
+ * it is called per spec file "so each file starts with a full budget" — this
+ * file was one of the ones not holding up that end.
+ */
+test.beforeAll(async () => {
+  await clearRateLimits()
+})
 
 test.afterAll(async () => {
   await deleteE2ECircles()

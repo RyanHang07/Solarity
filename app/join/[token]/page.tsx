@@ -7,6 +7,7 @@ import {
 } from "@/lib/supabase/circle-preview"
 import { signAvatars } from "@/lib/supabase/avatar-urls"
 import { Avatar } from "@/components/avatar"
+import { AuthShell } from "@/components/auth/auth-shell"
 import { enforce, RateLimitError } from "@/lib/ratelimit"
 import { clientIp, inviteTokenKey } from "@/lib/request-identity"
 import { JoinButton } from "./join-button"
@@ -77,20 +78,18 @@ export default async function JoinPage({
 
   if (limited) {
     return (
-      <main className="flex min-h-full flex-1 flex-col items-center justify-center gap-6 p-8">
-        <div className="flex w-full max-w-sm flex-col gap-3 rounded border px-4 py-5">
-          <h1 className="text-lg font-semibold">Too many invite links</h1>
-          <p className="text-sm opacity-70">
-            You&apos;ve opened a lot of invites in a short time. Wait{" "}
-            {Math.ceil(limited.retryAfterSeconds / 60)} minute
-            {Math.ceil(limited.retryAfterSeconds / 60) === 1 ? "" : "s"} and try
-            this link again. It hasn&apos;t expired.
-          </p>
-          <Link href={user ? "/dashboard" : "/"} className="text-sm underline opacity-70">
-            {user ? "Back to your dashboard" : "Back to Solarity"}
-          </Link>
-        </div>
-      </main>
+      <AuthShell wordmark>
+        <h1 className="ds-type-title ds-text-primary">Too many invite links</h1>
+        <p className="ds-text-muted">
+          You&apos;ve opened a lot of invites in a short time. Wait{" "}
+          {Math.ceil(limited.retryAfterSeconds / 60)} minute
+          {Math.ceil(limited.retryAfterSeconds / 60) === 1 ? "" : "s"} and try
+          this link again. It hasn&apos;t expired.
+        </p>
+        <Link href={user ? "/dashboard" : "/"} className="ds-link self-start">
+          {user ? "Back to your dashboard" : "Back to Solarity"}
+        </Link>
+      </AuthShell>
     )
   }
 
@@ -184,8 +183,14 @@ export default async function JoinPage({
   }
 
   return (
-    <main className="flex min-h-full flex-1 flex-col items-center justify-center gap-6 p-8">
-      <div className="flex w-full max-w-sm flex-col gap-4 rounded border px-4 py-5">
+    /*
+      **`wordmark`, unlike most `AuthShell` screens.** This is the app's only
+      unauthenticated page and, for a lot of people, the first Solarity screen
+      they ever see — somebody followed a link a friend sent. It should say
+      whose app it is before it asks them to join anything.
+    */
+    <AuthShell wordmark>
+      <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           {/*
             **The owner, not the inviter, and the difference is not a detail.**
@@ -200,11 +205,11 @@ export default async function JoinPage({
             specifically is in the notification that brought you here, where it
             is a fact rather than a guess.
           */}
-          <p className="text-sm opacity-70">
+          <p className="ds-type-note ds-text-muted">
             You&apos;ve been invited to{owner ? ` ${owner}'s Circle` : ""}
           </p>
-          <h1 className="text-xl font-semibold">{name}</h1>
-          <p className="text-sm opacity-70">
+          <h1 className="ds-type-title ds-text-primary">{name}</h1>
+          <p className="ds-type-note ds-text-muted">
             {count} of 10 {count === 1 ? "member" : "members"}
           </p>
         </div>
@@ -219,10 +224,13 @@ export default async function JoinPage({
         */}
         {members.length > 0 ? (
           <section aria-label="Already here" className="flex flex-col gap-2">
-            <h2 className="text-sm font-medium opacity-70">Already here</h2>
+            <h2 className="ds-type-label ds-text-muted">Already here</h2>
             <ul className="flex flex-col gap-1">
               {members.map((m) => (
-                <li key={m.username} className="flex items-center gap-2 text-sm">
+                <li
+                  key={m.username}
+                  className="ds-text-primary flex items-center gap-2"
+                >
                   {/*
                     **Initials for a signed-out visitor, and that is not a
                     fallback firing by accident.** `avatars_select` is
@@ -234,7 +242,7 @@ export default async function JoinPage({
                   <Avatar url={m.avatarUrl} name={m.username} size={24} />
                   <span className="truncate">{m.username}</span>
                   {m.role !== "member" ? (
-                    <span className="text-xs opacity-50">· {m.role}</span>
+                    <span className="ds-type-note ds-text-muted">· {m.role}</span>
                   ) : null}
                 </li>
               ))}
@@ -244,19 +252,31 @@ export default async function JoinPage({
 
         {explanation ? (
           <>
-            <p className="rounded border px-3 py-2 text-sm">{explanation}</p>
-            <Link href={user ? "/dashboard" : "/"} className="text-sm underline opacity-70">
+            {/*
+              Not `ds-border-danger`. A full Circle or a finished cycle is an
+              ordinary state of a real Circle that may reopen — colouring it as
+              an alarm would tell somebody their invite was broken when it was
+              simply early.
+            */}
+            <p className="ds-panel ds-text-primary px-3 py-2">{explanation}</p>
+            <Link href={user ? "/dashboard" : "/"} className="ds-link self-start">
               {user ? "Back to your dashboard" : "Back to Solarity"}
             </Link>
           </>
         ) : profileIncomplete ? (
           <>
-            <p className="text-sm opacity-70">
+            <p className="ds-text-muted">
               Finish setting up your account first, then open this link again.
             </p>
+            {/*
+              A navigation styled as the primary action — it has to be an `<a>`,
+              so `ds-cta` is used as a class rather than through the button
+              component. Same pattern as `/auth/error`.
+            */}
             <Link
               href="/onboarding"
-              className="rounded border px-4 py-2 text-center text-sm font-medium"
+              className="ds-cta ds-bg-flame ds-text-on-light ds-type-label block px-4 py-2.5 text-center"
+              style={{ ["--ds-cta-min" as string]: "auto" }}
             >
               Finish setting up
             </Link>
@@ -264,7 +284,7 @@ export default async function JoinPage({
         ) : user ? (
           <>
             <JoinButton token={token} circleName={name} />
-            <p className="text-xs opacity-60">
+            <p className="ds-type-note ds-text-muted">
               Everyone here can see whether you checked off your goals each day.
               That is the point of a Circle.
             </p>
@@ -280,7 +300,7 @@ export default async function JoinPage({
               it gives.
             */}
             {goalCounts ? (
-              <p className="text-xs opacity-60">
+              <p className="ds-type-note ds-text-muted">
                 {goalCounts.total === 0
                   ? "You have no goals yet. Nothing to show until you add one."
                   : goalCounts.visible === goalCounts.total
@@ -296,18 +316,24 @@ export default async function JoinPage({
               `/join/...`, so this lands back here with the button live rather
               than dumping them on the dashboard.
             */}
+            {/*
+              `roster.spec.ts` asserts `link "Sign in to join"` for a signed-out
+              visitor, so the name is fixed. Primary, because on this branch it
+              is the only thing to do.
+            */}
             <Link
               href={`/auth/sign-in?next=/join/${encodeURIComponent(token)}`}
-              className="rounded border px-4 py-2 text-center text-sm font-medium"
+              className="ds-cta ds-bg-flame ds-text-on-light ds-type-label block px-4 py-2.5 text-center"
+              style={{ ["--ds-cta-min" as string]: "auto" }}
             >
               Sign in to join
             </Link>
-            <p className="text-xs opacity-60">
+            <p className="ds-type-note ds-text-muted">
               Solarity is invite-only. You&apos;ll come straight back here.
             </p>
           </>
         )}
       </div>
-    </main>
+    </AuthShell>
   )
 }

@@ -1,6 +1,8 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { LegalFooter } from "@/components/legal-footer"
+import { AuthShell } from "@/components/auth/auth-shell"
+import { GoogleButton } from "@/components/auth/google-button"
+import { CardFoot, OrRule } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/server"
 import { signInWithGoogle } from "@/app/actions/auth"
 import { MINIMUM_AGE } from "@/lib/legal"
@@ -32,47 +34,42 @@ export default async function SignUpPage() {
   if (user) redirect("/dashboard")
 
   return (
-    <main className="flex min-h-full flex-1 flex-col items-center justify-center gap-6 p-8">
-      <div className="flex w-full max-w-sm flex-col gap-5 rounded border px-4 py-5">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold">Create an account</h1>
-          <p className="text-sm opacity-70">
-            Solarity is goals you keep with a few friends watching.
-          </p>
-        </div>
-
-        <form action={signInWithGoogle}>
-          <input type="hidden" name="next" value="/dashboard" />
-          <button
-            type="submit"
-            className="w-full rounded border px-4 py-2 text-sm font-medium"
-          >
-            Continue with Google
-          </button>
-        </form>
-
-        <div className="flex items-center gap-3 text-xs opacity-50">
-          <span className="h-px flex-1 bg-current" />
-          or
-          <span className="h-px flex-1 bg-current" />
-        </div>
-
-        <SignUpForm />
-
-        <p className="text-xs opacity-60">
-          You need to be {MINIMUM_AGE} or older. You&apos;ll pick a username
-          next.
-        </p>
-
-        <p className="border-t pt-4 text-sm">
-          Already have an account?{" "}
-          <Link href="/auth/sign-in" className="underline">
-            Sign in
-          </Link>
+    /*
+      **No wordmark, unlike sign-in, and the asymmetry is intentional.** This
+      screen has a real `<h1>` of its own — "Create an account" — and a lede
+      under it. Adding the mark above would give the page two titles and push
+      the first field below the fold on a phone, on the one screen where getting
+      to the fields is the entire job.
+    */
+    <AuthShell>
+      <div className="flex flex-col gap-1.5">
+        <h1 className="ds-type-title ds-text-primary">Create an account</h1>
+        <p className="ds-type-note ds-text-muted">
+          Solarity is goals you keep with a few friends watching.
         </p>
       </div>
 
-      <LegalFooter />
-    </main>
+      <form action={signInWithGoogle}>
+        <input type="hidden" name="next" value="/dashboard" />
+        <GoogleButton />
+      </form>
+
+      <OrRule />
+
+      <SignUpForm />
+
+      <p className="ds-type-note ds-text-muted">
+        You need to be {MINIMUM_AGE} or older. You&apos;ll pick a username next.
+      </p>
+
+      <CardFoot>
+        <p className="ds-type-note ds-text-muted">
+          Already have an account?{" "}
+          <Link href="/auth/sign-in" className="ds-link">
+            Sign in
+          </Link>
+        </p>
+      </CardFoot>
+    </AuthShell>
   )
 }

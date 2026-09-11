@@ -64,13 +64,13 @@ export function PushNudge({ dismissed }: { dismissed: boolean }) {
   if (!show || gone) return null
 
   return (
-    <div className="flex flex-col gap-1 rounded border px-3 py-2 text-sm">
-      <p>
+    <div className="ds-panel flex flex-col gap-1 px-3 py-2">
+      <p className="ds-text-primary">
         Solarity can tell you when your Circle is waiting on you. At most one
         notification a day.
       </p>
-      <div className="flex gap-3">
-        <Link href="/settings#notifications" className="underline">
+      <div className="flex flex-wrap items-center gap-3">
+        <Link href="/settings#notifications" className="ds-link">
           Turn on notifications
         </Link>
         <button
@@ -83,7 +83,7 @@ export function PushNudge({ dismissed }: { dismissed: boolean }) {
             setGone(true)
             void dismissPushNudgeAction().catch(() => {})
           }}
-          className="underline opacity-70"
+          className="ds-link ds-text-muted"
         >
           No thanks
         </button>

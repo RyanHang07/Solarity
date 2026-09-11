@@ -2,6 +2,7 @@ import { test, expect, type Browser, type Page } from "@playwright/test"
 import {
   admin,
   assertOk,
+  clearRateLimits,
   createCircleViaApi,
   deleteE2ECircles,
   deleteE2EGoals,
@@ -14,6 +15,7 @@ import {
   userIdByEmail,
 } from "./db"
 import { storageStateFor } from "./session"
+import { errorAlert } from "./ui"
 import { diagnose } from "./diagnose"
 import { MIN_GAP_MS } from "@/app/(app)/circles/[id]/refresh-on-return"
 
@@ -156,11 +158,18 @@ async function circleWithGoals(browser: Browser) {
       .single()
     if (entry.error) throw new Error(`check the visible goal off: ${entry.error.message}`)
   } catch (seedFailure) {
-    await cleanup({ groupId, name, ownerPage, joinerPage, goalIds, parked })
+    // `joinerId` too: `cleanup` takes the same shape this function returns, so
+    // adding a field to the return adds it here. The seed-failure path is the
+    // one place that builds the object by hand rather than passing one on, and
+    // it is the one place a typecheck catches rather than a run.
+    await cleanup({ groupId, name, ownerPage, joinerPage, goalIds, parked, joinerId })
     throw seedFailure
   }
 
-  return { groupId, name, ownerPage, joinerPage, goalIds, parked }
+  // `joinerId` is already computed above for the goal seeding; returning it
+  // saves every caller a second `userIdByEmail` round trip, and the report test
+  // needs it to find the row it filed.
+  return { groupId, name, ownerPage, joinerPage, goalIds, parked, joinerId }
 }
 
 async function cleanup(s: Awaited<ReturnType<typeof circleWithGoals>>) {
@@ -173,6 +182,22 @@ async function cleanup(s: Awaited<ReturnType<typeof circleWithGoals>>) {
   await deleteE2ECircles()
   await restoreGoalSlots(s.parked)
 }
+
+/**
+ * **The longest file in the suite, and the hungriest.**
+ *
+ * Nearly every test here seeds a Circle through `createCircleViaApi` and joins
+ * it through the UI, so one run spends a large share of both `createCircle`
+ * (5 a day) and `joinCircle` (10 an hour) on accounts every other spec shares,
+ * plus the IP-keyed `inviteAttempt` that `/join/[token]` charges on load.
+ *
+ * A budget that runs out mid-file is the worst version of this: the early tests
+ * pass, the later ones fail, and the boundary moves with how much of the day is
+ * left. Starting from a clean budget makes a failure here mean the roster.
+ */
+test.beforeAll(async () => {
+  await clearRateLimits()
+})
 
 test("the Today tab is the default, and the other two are addressable", async ({
   browser,
@@ -327,6 +352,159 @@ test("you can stop sharing your own note, and only your own", async ({ browser }
     // And it goes back, so an accidental tap is not a one-way door.
     await mine.getByRole("button", { name: /Share with your Circles/i }).click()
     await expect(mine.getByRole("button", { name: /Stop sharing/i })).toBeVisible()
+
+    /**
+     * **A tampered `entryId` is refused, and the refusal is announced.**
+     *
+     * `setNoteSharing` takes the entry id from the form and scopes the update by
+     * RLS rather than by anything the form claims — so a row that is not yours
+     * updates nothing, `data.length` is 0, and the action returns a sentence
+     * instead of silently reporting success. Overwriting the hidden field is the
+     * only way to reach that branch from the UI, and it is worth reaching: it
+     * proves the update is scoped by the database and not by the markup.
+     *
+     * Asserted through `errorAlert`, which until 11 September could not see this
+     * message at all. It renders as `<li role="alert">` because the parent is the
+     * roster's `<ul>` — the tag is fixed by the markup — and the helper matched
+     * `p[role="alert"]` only, so this branch could be neither observed nor
+     * tested. A comment here said so and stopped there.
+     */
+    await mine
+      .locator('input[name="entryId"]')
+      .first()
+      .evaluate((el: HTMLInputElement) => {
+        el.value = "00000000-0000-4000-8000-000000000000"
+      })
+    await mine.getByRole("button", { name: /Stop sharing/i }).click()
+
+    await expect(
+      errorAlert(mine),
+      "a check-in id that is not yours was accepted, or its refusal is silent",
+    ).toHaveText(/isn't yours, or no longer exists/i)
+
+    /**
+     * The real row is untouched: a refusal must not have written anything.
+     *
+     * Found by the note rather than by `s.goalIds[0]` — the setup creates two
+     * goals and only one carries a note, and which index that is belongs to the
+     * fixture rather than to this assertion. `SHARED_NOTE` is unique to this
+     * file, so it identifies the row without depending on ordering.
+     */
+    const untouched = await admin
+      .from("progress_entries")
+      .select("note_shared")
+      .eq("note", SHARED_NOTE)
+      .single()
+    assertOk(untouched, "re-read the note after the refused toggle")
+    expect(untouched.data.note_shared, "a refused toggle still wrote").toBe(true)
+  } finally {
+    await cleanup(s)
+  }
+})
+
+/**
+ * Reporting a note from the roster — **a flow no spec reached until now.**
+ *
+ * The audit of 11 September went looking for the error surfaces `e2e/ui.ts`
+ * could not see and found something larger behind one of them: nothing opened
+ * this form at all. The refusal was untestable because the helper matched
+ * `p[role="alert"]` only; the *success* was untested for no reason but oversight.
+ *
+ * **The length branch is deliberately unreachable and not asserted.** The
+ * textarea's `maxLength` is 500 and `REASON_MAX` is 500, so the client cannot
+ * produce a reason the server would refuse for length. That is the correct
+ * arrangement — the server check is the one that matters and the client one
+ * stops a person writing an essay they will lose — and a test that forced it
+ * would be asserting on a state the app cannot enter.
+ */
+test("a note can be reported, and a tampered report is refused", async ({
+  browser,
+}) => {
+  const s = await circleWithGoals(browser)
+  try {
+    // The owner reports the joiner's note: the control renders for other
+    // people's notes only, which is asserted on the way past.
+    const p = s.ownerPage
+    await p.goto(`/circles/${s.groupId}`)
+    await p.getByRole("button").filter({ hasText: "1 of 2" }).click()
+    await expect(p.getByText(SHARED_NOTE)).toBeVisible()
+
+    await p.getByRole("button", { name: /Report this note/i }).click()
+
+    /**
+     * **The textarea proves hydration before anything is clicked.** This form
+     * lives in a client component, so `<form action={fn}>` carries a placeholder
+     * `action` until React attaches — a click before that does nothing at all,
+     * with no error and no request, and fails later somewhere unrelated. The
+     * panel only exists once `setOpen(true)` has run, so waiting for it is the
+     * cheap proof. Same shape as the block race in `moderation.spec.ts`.
+     */
+    const reason = p.getByLabel(/What's wrong with this note\?/i)
+    await expect(reason, "the report form never opened, so the page had not hydrated").toBeVisible()
+
+    // ------------------------------------------------ the refusal, first
+    //
+    // `contentType` is narrowed against an allow-list before anything reaches
+    // the database, so a value outside it is refused without spending a report
+    // token — the limit is enforced after validation, on purpose.
+    await reason.fill("this is spam")
+    await p
+      .locator('input[name="contentType"]')
+      .first()
+      .evaluate((el: HTMLInputElement) => {
+        el.value = "not_a_real_content_type"
+      })
+    await p.getByRole("button", { name: /Send report/i }).click()
+
+    await expect(
+      errorAlert(p),
+      "a report with an invalid content type was accepted, or its refusal is silent",
+    ).toHaveText(/Couldn't send that report/i)
+
+    /**
+     * **Counted, not filtered by the tampered value**, and the first version of
+     * this got it wrong in a way worth keeping.
+     *
+     * `.eq("content_type", "not_a_real_content_type")` looks like the obvious
+     * negative control and cannot run at all: `content_type` is a Postgres enum,
+     * so PostgREST refuses the comparison — *invalid input value for enum
+     * content_report_type* — and the query errors before it can return zero
+     * rows. The test failed while the app was behaving correctly.
+     *
+     * Which is itself the answer. **A row with that value is unstorable**, and
+     * the enum says so at the schema level rather than at the assertion level.
+     * What is actually worth checking is that the refusal wrote *nothing* — so
+     * count this user's reports and require none.
+     */
+    const none = await admin
+      .from("content_reports")
+      .select("id")
+      .eq("reported_user_id", s.joinerId)
+    assertOk(none, "look for a report that should not exist")
+    expect(none.data, "a refused report was written anyway").toHaveLength(0)
+
+    // ------------------------------------------------ and then the real one
+    await p.reload()
+    await p.getByRole("button").filter({ hasText: "1 of 2" }).click()
+    await p.getByRole("button", { name: /Report this note/i }).click()
+    await p.getByLabel(/What's wrong with this note\?/i).fill("this is spam")
+    await p.getByRole("button", { name: /Send report/i }).click()
+
+    // The control is replaced rather than re-offered: a second report about the
+    // same thing costs the reporter one of ten a day and tells a moderator
+    // nothing new.
+    await expect(p.getByText(/Reported\. Thanks\./i)).toBeVisible()
+    await expect(p.getByRole("button", { name: /Report this note/i })).toHaveCount(0)
+
+    const filed = await admin
+      .from("content_reports")
+      .select("id, content_type, reason")
+      .eq("reported_user_id", s.joinerId)
+    assertOk(filed, "read the filed report")
+    expect(filed.data, "the report was not written").toHaveLength(1)
+    expect(filed.data[0].content_type).toBe("checkin_note")
+
+    await admin.from("content_reports").delete().eq("id", filed.data[0].id)
   } finally {
     await cleanup(s)
   }

@@ -3,18 +3,16 @@
 import { useActionState, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { setRole } from "@/app/actions/admin"
+import { SecondaryButton } from "@/components/ui/button"
+import { FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
 
 function Submit({ label }: { label: string }) {
   const { pending } = useFormStatus()
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="rounded border px-3 py-2 text-sm font-medium disabled:opacity-50"
-    >
+    <SecondaryButton type="submit" disabled={pending} align="center">
       {pending ? "Saving…" : label}
-    </button>
+    </SecondaryButton>
   )
 }
 
@@ -42,10 +40,13 @@ export function RoleForm() {
   const [confirming, setConfirming] = useState(false)
 
   return (
-    <section aria-label="Change a role" className="flex flex-col gap-3 border-t pt-5">
-      <h2 className="text-lg font-semibold">Change a role</h2>
+    <section
+      aria-label="Change a role"
+      className="ds-border-oatmeal flex flex-col gap-3 border-t pt-5"
+    >
+      <h2 className="ds-type-heading ds-text-primary">Change a role</h2>
 
-      <label htmlFor="role-username" className="text-sm">
+      <label htmlFor="role-username" className="ds-type-label ds-text-muted">
         Username
       </label>
       <input
@@ -58,17 +59,22 @@ export function RoleForm() {
           setConfirming(false)
         }}
         autoComplete="off"
-        className="max-w-64 rounded border px-3 py-2 text-sm"
+        className="ds-field max-w-64"
       />
 
       {confirming ? (
-        <div className="flex flex-col gap-2 rounded border border-red-600 px-3 py-2">
-          <p className="text-sm">
+        /*
+          Danger-bordered, because granting admin hands somebody the content of
+          every report — private notes and photos included. It is the one action
+          in this file that widens who can read what.
+        */
+        <div className="ds-panel ds-border-danger flex flex-col gap-2 px-3 py-2">
+          <p className="ds-text-primary">
             Make <strong>{username}</strong> an administrator? They will be able
             to read the content of every report, including private notes and
             photos.
           </p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <form action={action}>
               <input type="hidden" name="username" value={username} />
               <input type="hidden" name="role" value="admin" />
@@ -77,22 +83,21 @@ export function RoleForm() {
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="rounded px-3 py-2 text-sm underline opacity-70"
+              className="ds-link"
             >
               Cancel
             </button>
           </div>
         </div>
       ) : (
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
+        <div className="flex flex-wrap items-center gap-2">
+          <SecondaryButton
             disabled={!username.trim()}
             onClick={() => setConfirming(true)}
-            className="rounded border px-3 py-2 text-sm font-medium disabled:opacity-50"
+            align="center"
           >
             Grant admin
-          </button>
+          </SecondaryButton>
 
           <form action={action}>
             <input type="hidden" name="username" value={username} />
@@ -103,15 +108,11 @@ export function RoleForm() {
       )}
 
       {state?.ok ? (
-        <p role="status" className="text-sm">
+        <p role="status" className="ds-text-primary">
           Saved.
         </p>
       ) : null}
-      {state && !state.ok ? (
-        <p role="alert" className="text-sm text-red-600">
-          {state.error}
-        </p>
-      ) : null}
+      {state && !state.ok ? <FormError>{state.error}</FormError> : null}
     </section>
   )
 }

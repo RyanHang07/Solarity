@@ -5,6 +5,9 @@ import { useFormStatus } from "react-dom"
 import { checkIn, undoCheckIn } from "@/app/actions/check-ins"
 import { PhotoButton } from "./photo-button"
 import { CheckinPhoto } from "@/components/checkin-photo"
+import { PhaseMark } from "@/components/marks/marks"
+import { Panel } from "@/components/ui/panel"
+import { FormError } from "@/components/ui/field"
 
 /** Mirrors the NOTE_MAX in `app/actions/check-ins.ts`. */
 const NOTE_MAX = 500
@@ -32,17 +35,35 @@ function RowButton({
 }) {
   const { pending } = useFormStatus()
   return (
+    /*
+      **The label went `sr-only` and the disc became the control.** The phase
+      mark is the system's one signature element and this is the row it was
+      built for: a sun that fills as the day is finished says the state without
+      a word, and a screen of ten text buttons said it ten times.
+
+      **The accessible name is unchanged, and that is deliberate.** Four specs
+      and nine call sites locate this by `name: "Check in"` and `name: "Undo"`.
+      The catalog's version said "Undo check-in", which would still have matched
+      `"Undo"` by substring and *not* matched `"Check in"` only because of a
+      hyphen — precisely the kind of accident that made "Settings" match
+      "Account settings". Keeping the exact strings means the design moved and
+      no locator did.
+
+      `title` gives a pointer user the same word on hover. It does not touch the
+      accessible name, because the `sr-only` span already provides one.
+    */
     <button
       type="submit"
       disabled={pending}
+      title={label}
+      aria-pressed={done}
       onClick={(e) => {
         if (confirm && !window.confirm(confirm)) e.preventDefault()
       }}
-      className={`rounded border px-3 py-1 text-xs font-medium disabled:opacity-50 ${
-        done ? "opacity-70" : ""
-      }`}
+      className="ds-phase ds-text-flame"
     >
-      {pending ? "…" : label}
+      <PhaseMark done={done} size={30} />
+      <span className="sr-only">{pending ? "Saving…" : label}</span>
     </button>
   )
 }
@@ -105,20 +126,26 @@ export function TodayPanel({
   const error = current && !current.ok ? current.error : null
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="text-lg font-semibold">Today</h2>
-        <span className="text-sm opacity-70">
+    <Panel
+      title="Today"
+      accent
+      action={
+        <span className="ds-type-note ds-text-muted">
           {done} of {goals.length}
         </span>
-      </div>
-
+      }
+    >
+      {/*
+        **`accent` here and nowhere else on the dashboard.** The flame corners
+        are the one-per-screen mark, and this is the card the screen exists for
+        — everything below it is context for whether these rows are ticked.
+      */}
       {hideStreak ? null : (
-        <p className="text-sm">
-          <strong>
+        <p className="mb-3">
+          <strong className="ds-type-metric ds-text-flame">
             {streak} day{streak === 1 ? "" : "s"}
           </strong>{" "}
-          <span className="opacity-70">
+          <span className="ds-text-muted">
             {streak === 0
               ? "Check off every goal to start a streak."
               : streakIncludesToday
@@ -129,14 +156,24 @@ export function TodayPanel({
       )}
 
       {!goals.length ? (
-        <p className="text-sm opacity-70">
+        <p className="ds-text-muted">
           No active goals. A day with no goals counts as incomplete, not as a
           free pass, so add one below.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        /*
+          **Hairline-separated rows inside one card, not ten bordered boxes.**
+          Ten `rounded border` rows drew eleven rectangles for one list and made
+          each goal look like its own panel. The rule between them is enough to
+          say "these are siblings", and `last:border-b-0` stops the list closing
+          with a line that has nothing under it.
+        */
+        <ul className="flex flex-col">
           {goals.map((g) => (
-            <li key={g.id} className="rounded border px-3 py-2 text-sm">
+            <li
+              key={g.id}
+              className="ds-border-oatmeal border-b py-3 last:border-b-0 last:pb-0"
+            >
               {/*
                 The form wraps the whole row so the note and its sharing tick
                 are submitted with the check-in. `checkIn` writes all three in
@@ -157,7 +194,13 @@ export function TodayPanel({
                       className="inline-block size-3 shrink-0 rounded-full"
                       style={{ background: g.color ?? undefined }}
                     />
-                    <span className={g.checkedIn ? "line-through opacity-60" : ""}>
+                    <span
+                      className={
+                        g.checkedIn
+                          ? "ds-text-muted line-through"
+                          : "ds-text-primary"
+                      }
+                    >
                       {g.title}
                     </span>
                   </span>
@@ -171,7 +214,7 @@ export function TodayPanel({
                         type="button"
                         onClick={() => setNoteFor(noteFor === g.id ? null : g.id)}
                         aria-expanded={noteFor === g.id}
-                        className="text-xs underline opacity-70"
+                        className="ds-link ds-type-note"
                       >
                         {noteFor === g.id ? "Cancel note" : "+ note"}
                       </button>
@@ -219,9 +262,9 @@ export function TodayPanel({
                       maxLength={NOTE_MAX}
                       aria-label={`Note for ${g.title}`}
                       placeholder="How did it go?"
-                      className="rounded border px-2 py-1 text-sm"
+                      className="ds-field"
                     />
-                    <label className="flex items-center gap-2 text-xs opacity-70">
+                    <label className="ds-text-muted flex items-center gap-2.5">
                       {/*
                         Unticked sends no field at all, and `checkIn` reads that
                         as private. Both defaults point the same way on purpose.
@@ -230,7 +273,15 @@ export function TodayPanel({
                         so it reaches every Circle where this goal is visible.
                         The dashboard has no single Circle to name anyway.
                       */}
-                      <input type="checkbox" name="noteShared" />
+                      {/*
+                        `ds-check` is `accent-color` and `color-scheme: dark`
+                        and almost nothing else. Hiding the input to draw a div
+                        would buy a shape and cost the whole native contract —
+                        keyboard behaviour, form participation, the OS focus
+                        ring, the announcement, the tick animation people
+                        already know.
+                      */}
+                      <input type="checkbox" name="noteShared" className="ds-check" />
                       Share this note with your Circles
                     </label>
                   </div>
@@ -241,22 +292,18 @@ export function TodayPanel({
         </ul>
       )}
 
-      {error ? (
-        <p role="alert" className="text-sm text-red-600">
-          {error}
-        </p>
-      ) : null}
+      {error ? <FormError>{error}</FormError> : null}
 
       {/* daily_completion is written by a trigger the moment the last goal is
           checked off, so this reflects the stored value rather than the count
           above. If the two ever disagree, the trigger is the one to trust. */}
       {goals.length && completedToday ? (
-        <p className="text-sm opacity-70">
+        <p className="ds-type-note ds-text-muted mt-3">
           Day complete. The stored counter catches up at the next rollover; a
           day is not final until it is over, since adding a goal or undoing a
           check-in can still reopen it.
         </p>
       ) : null}
-    </section>
+    </Panel>
   )
 }

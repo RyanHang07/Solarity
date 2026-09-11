@@ -44,7 +44,12 @@ const GalaxyView = dynamic(
  */
 export function GalaxyPreview({
   snapshot,
-  className = "h-48 w-full overflow-hidden rounded border",
+  /*
+    `ds-card`, the same frame `GalaxyCard` uses. The sky inside is the module's;
+    the frame around it is the app's, and the two staying in step is why this
+    default is a token rather than a hand-rolled border.
+  */
+  className = "ds-card h-48 w-full overflow-hidden",
 }: {
   snapshot: GalaxySnapshot
   className?: string

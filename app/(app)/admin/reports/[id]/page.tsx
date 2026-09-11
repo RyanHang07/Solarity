@@ -34,22 +34,22 @@ export default async function AdminReportPage({
 
   return (
     <div className="flex flex-col gap-5">
-      <Link href="/admin" className="text-sm underline opacity-70">
+      <Link href="/admin" className="ds-link self-start">
         ← Back to reports
       </Link>
 
-      <section aria-label="Report" className="flex flex-col gap-1 text-sm">
-        <h2 className="text-lg font-semibold">
+      <section aria-label="Report" className="flex flex-col gap-1">
+        <h2 className="ds-type-heading ds-text-primary">
           {SAYS[report.content_type] ?? report.content_type}
         </h2>
-        <p className="opacity-70">
+        <p className="ds-text-muted">
           About{" "}
           {report.reported_username ? (
             // A link out, because deciding often needs the context the profile
             // gives — and it is a page any signed-in user can already open.
             <Link
               href={`/profile/${report.reported_username}`}
-              className="underline"
+              className="ds-link"
             >
               {report.reported_username}
             </Link>
@@ -59,8 +59,8 @@ export default async function AdminReportPage({
           . Reported by {report.reporter_username ?? "a deleted account"} on{" "}
           {new Date(report.created_at).toLocaleString()}.
         </p>
-        <p className="opacity-70">
-          Status: <strong>{report.status}</strong>
+        <p className="ds-text-muted">
+          Status: <strong className="ds-text-primary">{report.status}</strong>
           {report.reviewed_at
             ? ` · ${new Date(report.reviewed_at).toLocaleString()}`
             : null}
@@ -68,29 +68,29 @@ export default async function AdminReportPage({
       </section>
 
       <section aria-label="Reason" className="flex flex-col gap-1">
-        <h3 className="text-sm font-medium">Why it was reported</h3>
+        <h3 className="ds-type-label ds-text-muted">Why it was reported</h3>
         {report.reason ? (
           // `whitespace-pre-wrap`, because a reason is free text somebody typed
           // and line breaks are part of what they said.
-          <p className="whitespace-pre-wrap rounded border px-3 py-2 text-sm">
+          <p className="ds-panel ds-text-primary whitespace-pre-wrap px-3 py-2">
             {report.reason}
           </p>
         ) : (
-          <p className="text-sm opacity-60">No reason was given.</p>
+          <p className="ds-text-muted">No reason was given.</p>
         )}
       </section>
 
       <section aria-label="Reported content" className="flex flex-col gap-2">
-        <h3 className="text-sm font-medium">What was reported</h3>
+        <h3 className="ds-type-label ds-text-muted">What was reported</h3>
 
         {isCheckin ? (
           <>
-            <p className="text-xs opacity-60">
+            <p className="ds-type-note ds-text-muted">
               Check-in on {report.checkin_date ?? "an unknown date"}.
             </p>
 
             {report.note ? (
-              <p className="whitespace-pre-wrap rounded border px-3 py-2 text-sm">
+              <p className="ds-panel ds-text-primary whitespace-pre-wrap px-3 py-2">
                 {report.note}
               </p>
             ) : null}
@@ -100,7 +100,7 @@ export default async function AdminReportPage({
               <img
                 src={report.photoUrl}
                 alt="The reported check-in photo"
-                className="max-w-sm rounded border"
+                className="ds-card max-w-sm"
               />
             ) : null}
 
@@ -113,7 +113,7 @@ export default async function AdminReportPage({
                 distinguishing them would be detail about our storage rather than
                 about the report.
               */
-              <p className="text-sm opacity-60">
+              <p className="ds-text-muted">
                 The reported content is no longer available. It may have been
                 deleted, or the photo may have passed the 90-day retention
                 window. The report can still be resolved.
@@ -121,7 +121,7 @@ export default async function AdminReportPage({
             ) : null}
           </>
         ) : (
-          <p className="text-sm opacity-70">
+          <p className="ds-text-muted">
             {/* A profile report points at the account itself, so the profile
                 link above is the content. Nothing more to render here. */}
             The profile itself was reported. Open it above to review the

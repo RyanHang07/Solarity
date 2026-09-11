@@ -40,20 +40,25 @@ function Answer({
 }) {
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-lg font-semibold">{question}</h2>
-      <div className="flex flex-col gap-2 text-sm opacity-80">{children}</div>
+      <h2 className="ds-type-heading ds-text-primary">{question}</h2>
+      <div className="ds-text-primary flex flex-col gap-2">{children}</div>
     </section>
   )
 }
 
 export default function SupportPage() {
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 p-6">
+    /*
+      `ds-app`, the same as the policy pages and for the same reason: `/support`
+      sits outside `(app)`, so nothing else gives it the 14px base or the body
+      family. See `components/policy-page.tsx`.
+    */
+    <main className="ds-app mx-auto flex w-full max-w-md flex-1 flex-col gap-8 p-6">
       <header className="flex flex-col gap-2 pt-8">
-        <h1 className="text-2xl font-semibold tracking-tight">Support</h1>
-        <p className="text-sm opacity-70">
+        <h1 className="ds-type-title ds-text-primary">Support</h1>
+        <p className="ds-text-muted">
           Solarity is run by one person. Write to{" "}
-          <a href={`mailto:${CONTACT_EMAIL}`} className="underline">
+          <a href={`mailto:${CONTACT_EMAIL}`} className="ds-link">
             {CONTACT_EMAIL}
           </a>{" "}
           and you&apos;ll get an answer within {RESPONSE_DAYS} days, usually much
@@ -63,9 +68,9 @@ export default function SupportPage() {
 
       <Answer question="How do I get my data?">
         <p>
-          There&apos;s a <strong className="font-medium">Download your data</strong>{" "}
+          There&apos;s a <strong className="ds-type-label">Download your data</strong>{" "}
           link in{" "}
-          <Link href="/settings" className="underline">
+          <Link href="/settings" className="ds-link">
             Settings
           </Link>
           . It gives you one JSON file with your profile, your streaks and
@@ -82,13 +87,13 @@ export default function SupportPage() {
       <Answer question="How do I delete my account?">
         <p>
           In{" "}
-          <Link href="/settings" className="underline">
+          <Link href="/settings" className="ds-link">
             Settings
           </Link>
           , at the bottom. It happens immediately and cannot be undone.
         </p>
         <p>
-          <strong className="font-medium">What stays:</strong> your check-in
+          <strong className="ds-type-label">What stays:</strong> your check-in
           records, with your name and any note removed. They&apos;re part of your
           Circles&apos; shared history — the days a group completed together —
           and erasing them would silently rewrite other people&apos;s streaks. A
@@ -108,7 +113,7 @@ export default function SupportPage() {
           its photo.
         </p>
         <p>
-          <strong className="font-medium">
+          <strong className="ds-type-label">
             After {RETENTION_DAYS.PHOTOS} days the image is deleted
           </strong>{" "}
           automatically. The check-in itself, and your streak, stay. Notifications
@@ -132,14 +137,14 @@ export default function SupportPage() {
 
       <Answer question="What's the difference between blocking and being removed?">
         <p>
-          <strong className="font-medium">Blocking</strong> is something you do.
+          <strong className="ds-type-label">Blocking</strong> is something you do.
           It hides your profile from that person and theirs from you, both ways,
           and they aren&apos;t told. It does not remove either of you from a
           Circle you both joined. Undo it in Settings, which is the only route
           back — blocking hides the page the Block button was on.
         </p>
         <p>
-          <strong className="font-medium">Being removed</strong> from a Circle is
+          <strong className="ds-type-label">Being removed</strong> from a Circle is
           done by its owner or an admin. You stop seeing it, and you&apos;re told
           it happened.
         </p>
@@ -149,7 +154,7 @@ export default function SupportPage() {
         <p>
           iOS only delivers notifications to a web app that has been added to the
           home screen. In Safari, tap Share, then{" "}
-          <strong className="font-medium">Add to Home Screen</strong>, and open
+          <strong className="ds-type-label">Add to Home Screen</strong>, and open
           Solarity from that icon. Then turn notifications on in Settings.
         </p>
         <p>
@@ -165,12 +170,12 @@ export default function SupportPage() {
         </p>
         <p>
           If you used an email address and password,{" "}
-          <Link href="/auth/forgot-password" className="underline">
+          <Link href="/auth/forgot-password" className="ds-link">
             ask for a reset link
           </Link>
           . If no email arrives, check your spam folder, and if it still
           hasn&apos;t come, write to{" "}
-          <a href={`mailto:${CONTACT_EMAIL}`} className="underline">
+          <a href={`mailto:${CONTACT_EMAIL}`} className="ds-link">
             {CONTACT_EMAIL}
           </a>
           .

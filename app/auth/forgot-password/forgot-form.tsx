@@ -4,18 +4,16 @@ import { useActionState, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { requestPasswordReset } from "@/app/actions/auth"
 import { Turnstile } from "@/components/turnstile"
+import { PrimaryButton } from "@/components/ui/button"
+import { Field, FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
 
 function Submit() {
   const { pending } = useFormStatus()
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="rounded border px-4 py-2 text-sm font-medium disabled:opacity-50"
-    >
+    <PrimaryButton type="submit" disabled={pending} full>
       {pending ? "Sending…" : "Send a reset link"}
-    </button>
+    </PrimaryButton>
   )
 }
 
@@ -59,11 +57,11 @@ export function ForgotForm() {
   if (state?.ok) {
     return (
       <div className="flex flex-col gap-2" aria-live="polite">
-        <p className="text-sm">
+        <p className="ds-text-primary">
           If there&apos;s an account for that address, a reset link is on its
           way.
         </p>
-        <p className="text-sm opacity-70">
+        <p className="ds-type-note ds-text-muted">
           It expires shortly, and it only works once. Check your spam folder if
           it hasn&apos;t arrived in a minute or two.
         </p>
@@ -73,26 +71,13 @@ export function ForgotForm() {
 
   return (
     <form action={action} className="flex w-full flex-col gap-3">
-      <label className="flex flex-col gap-1 text-sm">
-        Email
-        <input
-          type="email"
-          name="email"
-          required
-          autoComplete="email"
-          className="rounded border px-3 py-2"
-        />
-      </label>
+      <Field label="Email" type="email" name="email" required autoComplete="email" />
 
       <Turnstile resetKey={attempts} />
 
       <Submit />
 
-      {state && !state.ok ? (
-        <p role="alert" className="text-sm text-red-600">
-          {state.error}
-        </p>
-      ) : null}
+      {state && !state.ok ? <FormError>{state.error}</FormError> : null}
     </form>
   )
 }

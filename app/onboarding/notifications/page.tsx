@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { OnboardingShell } from "@/components/onboarding/onboarding-shell"
 import { createClient } from "@/lib/supabase/server"
 import { PushPrompt } from "./push-prompt"
 
@@ -23,8 +24,12 @@ export default async function NotificationsPage() {
   if (!user) redirect("/auth/sign-in?next=/onboarding")
 
   return (
-    <main className="flex min-h-full flex-1 flex-col items-center justify-center gap-6 p-8">
+    /*
+      No `title`, for the same reason as the install screen: both the heading
+      and the lede change once permission is granted, and only the client knows.
+    */
+    <OnboardingShell>
       <PushPrompt next="/dashboard" />
-    </main>
+    </OnboardingShell>
   )
 }

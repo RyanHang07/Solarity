@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { OnboardingShell } from "@/components/onboarding/onboarding-shell"
 import { createClient } from "@/lib/supabase/server"
 import { FirstGoalForm } from "./first-goal-form"
 
@@ -67,14 +68,10 @@ export default async function FirstGoalPage() {
   if (everHadAGoal) redirect("/onboarding/install")
 
   return (
-    <main className="flex min-h-full flex-1 flex-col items-center justify-center gap-6 p-8">
-      <div className="flex w-full max-w-xs flex-col gap-2">
-        <h1 className="text-xl font-semibold">What are you working on?</h1>
-        <p className="text-sm opacity-70">
-          One thing you want to do most days. You can add more, rename it, or
-          retire it whenever you like.
-        </p>
-      </div>
+    <OnboardingShell
+      title="What are you working on?"
+      lede="One thing you want to do most days. You can add more, rename it, or retire it whenever you like."
+    >
       {/*
         The id, because the sun's colour is derived from it — `memberSun.ts`
         hashes the account onto six presets, so the sun drawn here is the one
@@ -82,6 +79,6 @@ export default async function FirstGoalPage() {
         seed, not a credential, and it is already in the session.
       */}
       <FirstGoalForm categories={categories ?? []} userId={user.id} />
-    </main>
+    </OnboardingShell>
   )
 }

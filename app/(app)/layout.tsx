@@ -4,6 +4,9 @@ import { createClient } from "@/lib/supabase/server"
 import { signOut } from "@/app/actions/auth"
 import { signedAvatarUrl } from "@/app/actions/settings"
 import { Avatar } from "@/components/avatar"
+import { AppNavDesktop, AppNavMobile } from "@/components/shell/app-nav"
+import { SunMark, SettingsIcon } from "@/components/marks/marks"
+import { TAB_NOTIFICATION_TYPES } from "@/lib/notification-types"
 
 /**
  * Onboarding gate for every signed-in screen. See architecture/app.md section 2b
@@ -93,32 +96,124 @@ export default async function AppLayout({
    * Null when there is no picture, and `Avatar` renders an initial rather than
    * a broken image.
    */
-  const avatarUrl = await signedAvatarUrl(profile.avatar_url)
+  /**
+   * ## The unread count moved up here, and the bar moved with it
+   *
+   * It used to live in `(shell)/layout.tsx` on the stated rule *"does it belong
+   * to the shell rather than to a section"*. The rule is right and the answer
+   * changed: the bar is now the **app's** furniture rather than the shell's —
+   * one navbar on desktop, one tab bar on a phone — so the count that renders
+   * on it belongs here too.
+   *
+   * The cost is three extra `head: true` counts, on `/today`, `/settings` and
+   * `/circles/*`, which previously rendered no bar at all. That is one cheap
+   * count query in exchange for a bar that is correct on every screen instead
+   * of five.
+   *
+   * `MarkRead` still repairs it: opening Notifications marks everything read
+   * and calls `router.refresh()`, which re-renders this layout on the server
+   * without unmounting the bar.
+   */
+  const [avatarUrl, { count: unread }] = await Promise.all([
+    signedAvatarUrl(profile.avatar_url),
+    supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .is("read_at", null)
+      .in("type", TAB_NOTIFICATION_TYPES),
+  ])
+
+  const badges = { notifications: unread ?? 0 }
 
   return (
-    <div className="flex min-h-full flex-1 flex-col">
-      <header className="flex items-center justify-between border-b px-4 py-3">
-        <Link href="/dashboard" className="text-sm font-semibold tracking-tight">
-          Solarity
-        </Link>
-        <div className="flex items-center gap-3 text-sm">
-          {/*
-            **A link to your own profile, not decoration.** The picture is the
-            most tappable thing in the header and every app puts your profile
-            behind it; making it inert would be a small, constant surprise.
-          */}
-          <Link href="/profile" className="flex items-center gap-2 opacity-70">
-            <Avatar url={avatarUrl} name={profile.username} size={24} />
-            <span>{profile.username}</span>
+    <div className="ds-app flex min-h-full flex-1 flex-col">
+      {/*
+        ═══ the app bar ═══
+
+        **One bar on desktop, and none on a phone.**
+
+        It used to be a wordmark row here plus a section row in the shell —
+        three horizontal rules in the first 100px, and the sections reading as
+        the page's first section rather than as the app's furniture.
+
+        The bar is *filled*, and that is the distinction: everything the page
+        owns sits on the abyss, and the one thing the app owns does not. A
+        border could not say it, because the page is full of borders — a change
+        of plane is the only signal nothing else on screen is using.
+
+        **Hidden below `md`.** A wordmark and an avatar across the top of a
+        375px screen cost 52px of the one dimension a phone is short of, and
+        neither is a control: the wordmark names an app you just tapped the
+        icon of, and the avatar goes to Profile, which is a tab.
+      */}
+      <header className="ds-navbar hidden md:block">
+        <div className="ds-container flex items-center justify-between gap-6 px-8 py-3">
+          <Link
+            href="/dashboard"
+            /*
+              `ds-type-title`, not `text-xl font-semibold tracking-[-0.01em]` —
+              those three are value-for-value what the token already sets, and
+              `AuthShell`'s wordmark was corrected the same way. Three raw
+              classes that agree with a token today are three that disagree
+              after the next change to the scale.
+            */
+            className="ds-type-title ds-font-display ds-text-primary flex shrink-0 items-center gap-2.5"
+          >
+            <span className="ds-text-flame">
+              <SunMark size={19} />
+            </span>
+            Solarity
           </Link>
-          <form action={signOut}>
-            <button type="submit" className="underline opacity-70">
-              Sign out
-            </button>
-          </form>
+
+          <AppNavDesktop badges={badges} />
+
+          <span className="flex shrink-0 items-center gap-4">
+            <Link
+              href="/settings"
+              aria-label="Account settings"
+              title="Account settings"
+              className="ds-text-muted"
+            >
+              <SettingsIcon size={19} />
+            </Link>
+
+            {/*
+              **A link to your own profile, not decoration.** The picture is
+              the most tappable thing in the header and every app puts your
+              profile behind it; making it inert would be a small, constant
+              surprise.
+            */}
+            <Link href="/profile" className="flex items-center gap-2">
+              <Avatar url={avatarUrl} name={profile.username} size={26} />
+              <span className="sr-only">{profile.username}</span>
+            </Link>
+
+            <form action={signOut}>
+              <button type="submit" className="ds-link ds-type-note">
+                Sign out
+              </button>
+            </form>
+          </span>
         </div>
       </header>
-      <main className="flex flex-1 flex-col p-4">{children}</main>
+
+      {/*
+        **The bottom padding reads the bar's own variable**, so the two cannot
+        drift, and it is dropped at `md` where the bar is not there to need it.
+        Written as an arbitrary value rather than the `ds-tabbar-pad` token
+        because the token is unconditional — solarity-ui has no breakpoints to
+        speak of, since its previews render inside a device frame that would lie
+        to one.
+
+        The safe-area *top* inset is already paid on `body` in `globals.css`,
+        for every route including the ones outside this layout.
+      */}
+      <main className="ds-container flex flex-1 flex-col p-4 pb-[calc(var(--ds-tabbar-height)+env(safe-area-inset-bottom,0px)+1rem)] md:px-8 md:pb-6 md:pt-6">
+        {children}
+      </main>
+
+      <AppNavMobile badges={badges} />
     </div>
   )
 }

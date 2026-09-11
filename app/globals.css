@@ -1,8 +1,35 @@
 @import "tailwindcss";
 
+/*
+ * The design system, imported whole.
+ *
+ * **A separate file rather than merged into this one**, because it is copied
+ * from solarity-ui and re-copying is how it stays in step until solarity takes
+ * ownership. Everything below in this file is solarity's own: the galaxy sky,
+ * the safe-area padding, the native-control fixes.
+ */
+@import "./design-system.css";
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /*
+   * ═══ Solarity is dark ═══
+   *
+   * **The light theme is gone, and that was a decision rather than a
+   * simplification.**
+   *
+   * The design system pins the abyss unconditionally and all 48 of its tokens
+   * were measured against `#0f1620`. Supporting a light mode would mean a
+   * second value for each and about twenty contrast ratios re-derived — to
+   * serve a mode in which the galaxy, which is the product's whole visual
+   * argument, still renders a night sky. A white page around a black canvas
+   * was never the design.
+   *
+   * `--background` and `--foreground` stay as names because Tailwind's
+   * `@theme inline` block below maps them to utilities, and `body` reads them.
+   * They now simply have one value each.
+   */
+  --background: #0f1620;
+  --foreground: #f2eee6;
 
   /*
    * **The one property that makes native controls follow the theme.**
@@ -18,10 +45,12 @@
    * widgets in. It also covers the ones nobody has complained about yet —
    * `<select>` popups, scrollbars, spinners, form autofill.
    *
-   * `light dark` rather than a fixed value, so the browser follows the system
-   * exactly as the media query below does. Two mechanisms, one answer.
+   * **`dark`, not `light dark`.** It used to follow the system, matching a
+   * media query that no longer exists. Telling the UA we are always dark is
+   * what keeps `<select>` popups, scrollbars, spinners and autofill from
+   * rendering light on a page that is not.
    */
-  color-scheme: light dark;
+  color-scheme: dark;
 
   /*
    * The galaxy's sky.
@@ -225,12 +254,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/*
+ * The light/dark swap that used to live here is gone — see `:root` above.
+ * `#0a0a0a` and `#ededed` were close to the palette by coincidence rather than
+ * by measurement; the values are now the abyss and palladian the system was
+ * built on.
+ */
 
 /*
  * The calendar button inside `<input type="date">`, on Chromium.
@@ -245,11 +274,15 @@
  * against the media query rather than a class because the input is native and
  * carries none of ours.
  */
-@media (prefers-color-scheme: dark) {
-  input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-    opacity: 0.7;
-  }
+/*
+ * **Unconditional now.** It was inside a `prefers-color-scheme: dark` query
+ * because the page followed the system; the page is always dark, so the glyph
+ * always needs inverting. Leaving the query would have made the indicator
+ * invisible for every user whose OS is set to light.
+ */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.7;
 }
 
 body {

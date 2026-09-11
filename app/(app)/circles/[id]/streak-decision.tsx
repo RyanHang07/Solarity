@@ -3,8 +3,21 @@
 import { useActionState, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { resolveStreakDecision } from "@/app/actions/streak-decision"
+import { PrimaryButton, SecondaryButton } from "@/components/ui/button"
+import { FormError } from "@/components/ui/field"
+import { Panel } from "@/components/ui/panel"
 import type { ActionResult } from "@/lib/errors"
 
+/**
+ * **`name` and `value` are the whole mechanism, so they survive the restyle.**
+ * Which button was pressed *is* the answer — one form, two submits, and the
+ * server reads `choice` from the FormData. A button that lost its `value` would
+ * submit a decision with no content, which is why this is not two forms.
+ *
+ * `danger` colours the destructive answer without making it the primary: the
+ * flame button is reserved for keeping the streak, because that is the
+ * reversible choice and the one the copy recommends.
+ */
 function Submit({
   label,
   choice,
@@ -15,18 +28,44 @@ function Submit({
   danger?: boolean
 }) {
   const { pending } = useFormStatus()
+
+  /*
+    **`align="center"` is not decoration — without it the button fights its
+    own row.** `placement()` falls back to `self-start`, so a bare
+    `PrimaryButton` sets `align-self: flex-start` and overrides whatever
+    `items-*` the parent asked for. That is the exact Phase-1 bug the `align`
+    prop was added to fix, and the fix only works if callers in a row use it.
+
+    The default stays `self-start` because it is right in a *column*, where the
+    alternative is a button stretched to the full width of the card. So the
+    rule is: **a button in a flex row states its alignment; a button in a column
+    does not need to.**
+  */
+  if (danger) {
+    return (
+      <SecondaryButton
+        type="submit"
+        name="choice"
+        value={choice}
+        disabled={pending}
+        align="center"
+        className="ds-border-danger ds-text-danger"
+      >
+        {pending ? "Saving…" : label}
+      </SecondaryButton>
+    )
+  }
+
   return (
-    <button
+    <PrimaryButton
       type="submit"
       name="choice"
       value={choice}
       disabled={pending}
-      className={`rounded border px-3 py-2 text-sm font-medium disabled:opacity-50 ${
-        danger ? "border-red-600 text-red-600" : ""
-      }`}
+      align="center"
     >
       {pending ? "Saving…" : label}
-    </button>
+    </PrimaryButton>
   )
 }
 
@@ -72,63 +111,69 @@ export function StreakDecision({
   const who = joiners.length ? list(joiners) : "Someone"
 
   return (
-    <section className="flex flex-col gap-3 rounded border px-3 py-3">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-sm font-semibold">A decision is waiting on you</h2>
-        <p className="text-sm opacity-80">
-          {who} joined while this Circle was on a {streak} day streak. They
-          aren&apos;t being counted yet, so the streak is neither growing nor at
-          risk.
-        </p>
-      </div>
+    /*
+      **`accent` — the one flame mark on the Circle page.** This banner only
+      exists when something is genuinely waiting on the owner, and it is the
+      only thing on the screen that is. Spending the accent here is exactly what
+      "one per screen" is for; the roster below stays quiet under it.
+    */
+    <Panel title="A decision is waiting on you" accent>
+      <p className="ds-text-primary mb-3">
+        {who} joined while this Circle was on a {streak} day streak. They
+        aren&apos;t being counted yet, so the streak is neither growing nor at
+        risk.
+      </p>
 
-      <form action={action} className="flex flex-col gap-2">
+      <form action={action} className="flex flex-col gap-3">
         <input type="hidden" name="groupId" value={groupId} />
 
         {confirmReset ? (
-          <div className="flex flex-col gap-2 rounded border border-red-600 px-3 py-2">
-            <p className="text-sm">
+          /*
+            `ds-border-danger` wins over `ds-panel`'s own border because the
+            panel's is `:where()`d — the fix that exists precisely so a
+            companion colour token can override it. Before that, this box would
+            have drawn an ordinary hairline and the confirm would have looked
+            like the step before it.
+          */
+          <div className="ds-panel ds-border-danger flex flex-col gap-3 px-3 py-2">
+            <p className="ds-text-primary">
               Reset to 0 days for <strong>everyone</strong>, including members
               who earned it? This can&apos;t be undone.
             </p>
-            <div className="flex flex-wrap gap-2">
+            {/*
+              `items-center` on every button row in this file. Without it the
+              flex default is `stretch`, so a wrapped row makes the shorter
+              control grow to the taller one's height and the labels stop
+              sharing a baseline — the "spacing bug that is really a layout bug"
+              this codebase has now met three times.
+            */}
+            <div className="flex flex-wrap items-center gap-2">
               <Submit label="Reset for everyone" choice="reset" danger />
               <button
                 type="button"
                 onClick={() => setConfirmReset(false)}
-                className="rounded px-3 py-2 text-sm underline opacity-70"
+                className="ds-link"
               >
                 Cancel
               </button>
             </div>
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2">
-            <Submit
-              label={`Keep the ${streak} day streak`}
-              choice="keep"
-            />
-            <button
-              type="button"
-              onClick={() => setConfirmReset(true)}
-              className="rounded border px-3 py-2 text-sm font-medium"
-            >
+          <div className="flex flex-wrap items-center gap-2">
+            <Submit label={`Keep the ${streak} day streak`} choice="keep" />
+            <SecondaryButton onClick={() => setConfirmReset(true)} align="center">
               Start everyone over at 0
-            </button>
+            </SecondaryButton>
           </div>
         )}
 
-        <p className="text-xs opacity-60">
+        <p className="ds-type-note ds-text-muted">
           Either way they start counting from today. The only question is
           whether the {streak} days already earned survive.
         </p>
 
-        {state && !state.ok ? (
-          <p role="alert" className="text-sm text-red-600">
-            {state.error}
-          </p>
-        ) : null}
+        {state && !state.ok ? <FormError>{state.error}</FormError> : null}
       </form>
-    </section>
+    </Panel>
   )
 }

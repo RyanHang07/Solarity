@@ -10,6 +10,7 @@ import { GalaxyPanel } from "./galaxy-panel"
 import { PageBlocks, ViewholeProvider } from "@/components/viewhole"
 import { DigestPanel } from "./digest-panel"
 import { Notice } from "@/components/notice"
+import { FormError } from "@/components/ui/field"
 import { TAB_NOTIFICATION_TYPES } from "@/lib/notification-types"
 import { readMemberships } from "./memberships"
 
@@ -195,11 +196,11 @@ export default async function OverviewPage({
           streakIncludesToday={todayData.completedToday}
         />
       ) : (
-        <p role="alert" className="text-sm text-red-600">
+        <FormError>
           Couldn&apos;t work out today&apos;s date, so today&apos;s progress and
           your streak aren&apos;t showing. Everything else below is fine. Reload
           in a moment.
-        </p>
+        </FormError>
       )}
 
       {/*
@@ -216,7 +217,7 @@ export default async function OverviewPage({
         two panels around it.
       */}
       <div className="flex justify-end">
-        <Link href="/dashboard/goals" className="text-sm underline opacity-70">
+        <Link href="/dashboard/goals" className="ds-link">
           View goals
         </Link>
       </div>

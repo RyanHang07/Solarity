@@ -351,17 +351,33 @@ test.describe("the check-in gate", () => {
       await page.goto("/dashboard")
       await expect(page, "an unfinished day did not divert").toHaveURL(/\/today$/)
 
-      // The mark-seen action fires after the page paints, so the second visit
-      // has to wait for the cookie rather than assume it.
+      /**
+       * **Wait for the marker on a page that stays put**, the same as the two
+       * tests below. The old comment here had the diagnosis right — "the
+       * mark-seen action fires after the page paints" — and then polled in a
+       * way that fought it: every iteration navigated *away* from `/today`,
+       * able to cancel the in-flight server action before its `Set-Cookie`
+       * came back, so the loop could keep re-arming the thing it waited for.
+       *
+       * Third instance of this shape in this file. The other two were fixed
+       * when `moderation.spec.ts` made the cause obvious; this one was missed
+       * because its comment already sounded like it had been handled.
+       */
       await expect
         .poll(
-          async () => {
-            await page.goto("/dashboard")
-            return new URL(page.url()).pathname
-          },
-          { message: "the dashboard kept diverting after /today was shown" },
+          async () =>
+            (await page.context().cookies()).find(
+              (c) => c.name === "solarity_today_seen",
+            )?.value,
+          { message: "the day cookie was never written" },
         )
-        .toBe("/dashboard")
+        .toMatch(/^\d{4}-\d{2}-\d{2}$/)
+
+      await page.goto("/dashboard")
+      await expect(
+        page,
+        "the dashboard kept diverting after /today was shown",
+      ).toHaveURL(/\/dashboard$/)
     } finally {
       await close()
     }
@@ -427,12 +443,27 @@ test.describe("the check-in gate", () => {
       try {
         await first.page.goto("/dashboard")
         await expect(first.page).toHaveURL(/\/today$/)
+
+        // Same race, same fix as the `once_daily` test below: wait for the
+        // marker `MarkSeen` writes after hydration, on a page that stays put,
+        // rather than navigating away in a loop that can cancel the write it is
+        // waiting for. `every_open` remembers a session rather than a date, so
+        // the cookie is a bare "1".
         await expect
-          .poll(async () => {
-            await first.page.goto("/dashboard")
-            return new URL(first.page.url()).pathname
-          })
-          .toBe("/dashboard")
+          .poll(
+            async () =>
+              (await first.page.context().cookies()).find(
+                (c) => c.name === "solarity_today_session",
+              )?.value,
+            { message: "the session cookie was never written" },
+          )
+          .toBe("1")
+
+        await first.page.goto("/dashboard")
+        await expect(
+          first.page,
+          "the session cookie did not suppress the gate",
+        ).toHaveURL(/\/dashboard$/)
       } finally {
         await first.close()
       }
@@ -464,25 +495,51 @@ test.describe("the check-in gate", () => {
     try {
       await page.goto("/dashboard")
       await expect(page).toHaveURL(/\/today$/)
-      await expect
-        .poll(async () => {
-          await page.goto("/dashboard")
-          return new URL(page.url()).pathname
-        })
-        .toBe("/dashboard")
 
-      // The suppression is a date comparison, not a timer.
-      //
-      // Asserted on the cookie's **value** rather than by moving a clock: the
-      // check-in date is computed in Postgres from the user's timezone, and
-      // `page.clock` moves only the browser's. A cookie holding today's date
-      // cannot suppress tomorrow, whatever hour the browser thinks it is.
-      const cookie = (await page.context().cookies()).find(
-        (c) => c.name === "solarity_today_seen",
-      )
-      expect(cookie, "no day cookie was set").toBeDefined()
-      expect(cookie?.value, "the cookie is not a check-in date").toMatch(
-        /^\d{4}-\d{2}-\d{2}$/,
+      /**
+       * **Wait for the marker, then test the suppression. Not the other way
+       * round.**
+       *
+       * This used to poll `goto("/dashboard")` until the pathname stuck, which
+       * looks like waiting and is actually a race. `MarkSeen` writes the cookie
+       * from a `useEffect`, so it cannot fire until `/today` has hydrated — and
+       * every poll iteration navigated *away* from `/today`, potentially
+       * cancelling the in-flight server action before its `Set-Cookie` came
+       * back. The loop could therefore keep re-arming the very thing it was
+       * waiting for.
+       *
+       * It passed for months because hydration beat the next navigation. The
+       * design port made `/today` heavier — the panel now pulls in the phase
+       * marks and the card chrome — and under `next dev`, where every module is
+       * compiled on demand, that was enough to lose the race. **The app change
+       * exposed the flake; it did not cause it.** A test whose result depends
+       * on how fast a dev server compiles is not testing the gate.
+       *
+       * Polling the cookie waits for the actual precondition, on a page that
+       * stays put. Strictly more is asserted than before, and in the order the
+       * behaviour happens.
+       *
+       * The value is a check-in **date**, and that is the real subject: the
+       * suppression is a date comparison rather than a timer. It is asserted on
+       * the value rather than by moving a clock because the date is computed in
+       * Postgres from the user's timezone, and `page.clock` moves only the
+       * browser's. A cookie holding today's date cannot suppress tomorrow,
+       * whatever hour the browser thinks it is.
+       */
+      await expect
+        .poll(
+          async () =>
+            (await page.context().cookies()).find(
+              (c) => c.name === "solarity_today_seen",
+            )?.value,
+          { message: "the day cookie was never written" },
+        )
+        .toMatch(/^\d{4}-\d{2}-\d{2}$/)
+
+      // And with the marker written, the dashboard stops diverting.
+      await page.goto("/dashboard")
+      await expect(page, "the day cookie did not suppress the gate").toHaveURL(
+        /\/dashboard$/,
       )
     } finally {
       await close()

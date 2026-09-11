@@ -6,6 +6,7 @@ import { StreakDecision } from "./streak-decision"
 import { TodayRoster } from "./today-roster"
 import { CircleGalaxyPanel } from "./circle-galaxy-panel"
 import { PageBlocks, ViewholeProvider } from "@/components/viewhole"
+import { FormError } from "@/components/ui/field"
 import { getCircleRoster } from "@/lib/supabase/circle-roster"
 
 export const metadata = { title: "Circle — Solarity" }
@@ -167,18 +168,29 @@ export default async function CirclePage({
       ) : null}
 
       <PageBlocks className="flex flex-col gap-6">
+      {/*
+        `items-start`, not `items-center`: the title can wrap to two lines on a
+        phone and the Settings link should stay level with the *first* one
+        rather than drifting to the middle of the block.
+      */}
       <header className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold">{circle.name}</h1>
-          <p className="text-sm opacity-70">
+          <h1 className="ds-type-title ds-text-primary">{circle.name}</h1>
+          <p className="ds-type-note ds-text-muted">
             {circle.group_status !== "active" ? `${circle.group_status} · ` : ""}
             {members?.length ?? 0} of 10 members
           </p>
         </div>
+        {/*
+          The name stays exactly "Settings". `invite.spec.ts` locates it with
+          `exact: true` precisely because the app bar's cog is "Account
+          settings" and a substring match once picked the wrong one — the
+          collision that cost a run. Nothing here may lengthen this string.
+        */}
         {isAdmin ? (
           <Link
             href={`/circles/${id}/settings`}
-            className="shrink-0 text-sm underline opacity-70"
+            className="ds-link shrink-0"
           >
             Settings
           </Link>
@@ -190,19 +202,22 @@ export default async function CirclePage({
         A deadline of the 15th means the 15th is fully playable and the Circle
         locks at the 2 AM rollover on the 16th. architecture/time-and-streaks.md section 8.
       */}
-      <section className="rounded border px-3 py-2 text-sm">
+      <section className="ds-panel px-3 py-2">
         {deadline ? (
           <>
-            <strong>Runs through {deadline}</strong>
-            <span className="opacity-70">
+            <strong className="ds-text-primary">Runs through {deadline}</strong>
+            <span className="ds-text-muted">
               {" "}
               — that day is fully playable; the Circle locks the morning after.
             </span>
           </>
         ) : (
           <>
-            <strong>No deadline</strong>
-            <span className="opacity-70"> — this Circle runs until someone sets one.</span>
+            <strong className="ds-text-primary">No deadline</strong>
+            <span className="ds-text-muted">
+              {" "}
+              — this Circle runs until someone sets one.
+            </span>
           </>
         )}
       </section>
@@ -221,18 +236,36 @@ export default async function CirclePage({
         />
       ) : null}
 
-      <section className="flex gap-6 text-sm">
+      {/*
+        **`items-baseline`, and the two numbers are `ds-type-metric`.** The
+        counts sit next to their labels at different sizes, so aligning the
+        boxes rather than the text would leave "group streak" floating against
+        a 24px numeral. The token is tabular, which is the real reason it is
+        here: 9 → 10 must not shove the label sideways.
+      */}
+      <section className="flex items-baseline gap-6">
         <span>
-          <strong className="text-base">{cycle?.current_streak ?? 0}</strong>{" "}
-          <span className="opacity-70">group streak</span>
+          <strong className="ds-type-metric ds-text-flame">
+            {cycle?.current_streak ?? 0}
+          </strong>{" "}
+          <span className="ds-text-muted">group streak</span>
         </span>
         <span>
-          <strong className="text-base">{cycle?.longest_streak ?? 0}</strong>{" "}
-          <span className="opacity-70">longest</span>
+          <strong className="ds-type-metric ds-text-primary">
+            {cycle?.longest_streak ?? 0}
+          </strong>{" "}
+          <span className="ds-text-muted">longest</span>
         </span>
       </section>
 
-      <nav className="flex gap-3 border-b text-sm">
+      {/*
+        The tab row keeps its underline-on-current, which is the one shape a
+        person reads as "you are here" without a legend. Flame on the current
+        tab rather than weight alone: `roster.spec.ts` locates these by link
+        name, so the *text* must not change, and colour is the only channel left
+        that does not touch it.
+      */}
+      <nav className="ds-border-oatmeal flex gap-3 border-b">
         {(
           [
             ["today", "Today", `/circles/${id}`],
@@ -243,7 +276,12 @@ export default async function CirclePage({
           <Link
             key={key}
             href={href}
-            className={`px-1 pb-2 ${view === key ? "border-b-2 font-medium" : "opacity-70"}`}
+            aria-current={view === key ? "page" : undefined}
+            className={`ds-type-label px-1 pb-2 ${
+              view === key
+                ? "ds-text-flame border-b-2 border-current"
+                : "ds-text-muted"
+            }`}
           >
             {label}
           </Link>
@@ -254,9 +292,9 @@ export default async function CirclePage({
         <OverviewTab digests={digests ?? []} />
       ) : view === "today" ? (
         !roster ? (
-          <p role="alert" className="text-sm text-red-600">
+          <FormError>
             Couldn&apos;t load today&apos;s progress. Reload in a moment.
-          </p>
+          </FormError>
         ) : (
           <>
             {/*
@@ -266,9 +304,9 @@ export default async function CirclePage({
               disagree.
             */}
             {roster[0]?.as_of ? (
-              <p className="rounded border px-3 py-2 text-sm">
-                <strong>Final standing</strong>
-                <span className="opacity-70">
+              <p className="ds-panel px-3 py-2">
+                <strong className="ds-text-primary">Final standing</strong>
+                <span className="ds-text-muted">
                   {" "}
                   · this Circle {roster[0].circle_status === "archived" ? "was archived" : "locked"}{" "}
                   on {new Date(roster[0].as_of).toLocaleDateString()}, so these
@@ -294,7 +332,7 @@ export default async function CirclePage({
                 groupId={id}
               />
 
-              <p className="text-xs opacity-60">
+              <p className="ds-type-note ds-text-muted">
                 Each person&apos;s day is counted in their own timezone, so
                 someone ahead of you may already have finished.
               </p>
@@ -310,28 +348,28 @@ export default async function CirclePage({
               return (
                 <li
                   key={m.user_id}
-                  className="flex items-center justify-between gap-3 rounded border px-3 py-2 text-sm"
+                  className="ds-panel flex items-center justify-between gap-3 px-3 py-2"
                 >
-                  <span>
+                  <span className="ds-text-primary">
                     {/* coalesce(username, display_name): the unique handle
                         first, because this is where members tell each other
                         apart. `display_name` is not unique and two people can
                         hold the same one. */}
                     {m.users?.username || m.users?.display_name}
                     {m.user_id === user.id ? (
-                      <span className="opacity-60"> (you)</span>
+                      <span className="ds-text-muted"> (you)</span>
                     ) : null}
                     {m.role !== "member" ? (
-                      <span className="opacity-60"> · {m.role}</span>
+                      <span className="ds-text-muted"> · {m.role}</span>
                     ) : null}
                   </span>
 
                   {m.streak_grace ? (
-                    <span className="shrink-0 text-xs opacity-60">
+                    <span className="ds-type-note ds-text-muted shrink-0">
                       settling in, not counted yet
                     </span>
                   ) : (
-                    <span className="opacity-70">
+                    <span className="ds-text-muted">
                       {days} day{days === 1 ? "" : "s"}
                     </span>
                   )}
@@ -351,7 +389,7 @@ export default async function CirclePage({
             problem differently: each member's counts are computed against their
             own check-in date rather than against one shared guess.
           */}
-          <p className="text-xs opacity-60">
+          <p className="ds-type-note ds-text-muted">
             Streaks update at each member&apos;s own daily rollover, so today&apos;s
             progress appears here tomorrow. See the Today tab for live counts.
           </p>
@@ -370,7 +408,7 @@ function OverviewTab({
 }) {
   if (!digests.length) {
     return (
-      <p className="text-sm opacity-70">
+      <p className="ds-text-muted">
         No digests yet. The first one is written after this Circle&apos;s first
         full day ends.
       </p>
@@ -382,16 +420,23 @@ function OverviewTab({
       {digests.map((d) => {
         const s = d.summary as DigestSummary
         return (
-          <li key={d.date} className="rounded border px-3 py-2 text-sm">
-            <div className="flex justify-between">
-              <strong>{new Date(d.date).toLocaleDateString()}</strong>
-              <span className="opacity-70">
+          <li key={d.date} className="ds-panel px-3 py-2">
+            {/*
+              `items-baseline`, so the date and the count sit on one line rather
+              than on the box's top and bottom edges — `justify-between` alone
+              was doing nothing about the cross axis.
+            */}
+            <div className="flex items-baseline justify-between gap-3">
+              <strong className="ds-text-primary">
+                {new Date(d.date).toLocaleDateString()}
+              </strong>
+              <span className="ds-type-note ds-text-muted">
                 {s.completed_count} of {s.member_count} complete
               </span>
             </div>
             {/* Usernames come from the snapshot, not a live join: a rename must
                 not silently relabel a past digest. architecture/schema.md section 3. */}
-            <p className="mt-1 opacity-70">
+            <p className="ds-type-note ds-text-muted mt-1">
               {s.members
                 .map((m) => `${m.completed ? "✓" : "·"} ${m.username}`)
                 .join("   ")}

@@ -81,7 +81,7 @@ export default async function GoalsPage() {
         than a line and because an expandable list of them was clutter on the
         way somewhere else.
       */}
-      <Link href="/dashboard/goals/archived" className="self-start text-sm underline">
+      <Link href="/dashboard/goals/archived" className="ds-link self-start">
         {retiredCount
           ? `Archived and achieved (${retiredCount})`
           : "Archived and achieved"}

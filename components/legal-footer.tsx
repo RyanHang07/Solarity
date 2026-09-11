@@ -14,14 +14,14 @@ import Link from "next/link"
  */
 export function LegalFooter() {
   return (
-    <footer className="flex gap-4 text-xs opacity-60">
-      <Link href="/privacy" className="underline">
+    <footer className="ds-type-note flex flex-wrap items-center gap-4">
+      <Link href="/privacy" className="ds-link">
         Privacy
       </Link>
-      <Link href="/terms" className="underline">
+      <Link href="/terms" className="ds-link">
         Terms
       </Link>
-      <Link href="/support" className="underline">
+      <Link href="/support" className="ds-link">
         Support
       </Link>
     </footer>

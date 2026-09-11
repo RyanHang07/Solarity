@@ -10,6 +10,9 @@ import {
   setGoalDeadline,
   setHiddenEverywhere,
 } from "@/app/actions/goals"
+import { PrimaryButton } from "@/components/ui/button"
+import { FormError } from "@/components/ui/field"
+import { Panel } from "@/components/ui/panel"
 import { deadlineLabel, isOverdue } from "@/lib/goal-deadline"
 import type { ActionResult } from "@/lib/errors"
 
@@ -55,9 +58,12 @@ function Deadline({
   const inputId = `deadline-${goal.id}`
 
   return (
-    <form action={action} className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+    <form
+      action={action}
+      className="ds-type-note mt-1 flex flex-wrap items-center gap-2"
+    >
       <input type="hidden" name="goalId" value={goal.id} />
-      <label htmlFor={inputId} className="opacity-70">
+      <label htmlFor={inputId} className="ds-text-muted">
         Deadline
       </label>
       {/*
@@ -70,30 +76,39 @@ function Deadline({
         type="date"
         name="deadline"
         defaultValue={goal.deadline ?? ""}
-        className="rounded border px-2 py-1"
+        /*
+          `ds-field` carries the `filter: invert(1)` fix for the native date
+          glyph — `globals.css` applies it unconditionally now the app is
+          dark-only, because leaving it in a `prefers-color-scheme` query hid
+          the picker icon for anyone whose OS is set to light.
+        */
+        className="ds-field px-2 py-1"
       />
-      <button type="submit" className="underline opacity-70">
+      <button type="submit" className="ds-link">
         Save
       </button>
       {label ? (
         // Colour is not the only signal: the word "Overdue" is in the text, so
         // this reads the same to anyone who cannot see the red.
-        <span className={overdue ? "text-red-600" : "opacity-60"}>{label}</span>
+        <span className={overdue ? "ds-text-danger" : "ds-text-muted"}>
+          {label}
+        </span>
       ) : null}
     </form>
   )
 }
 
+/**
+ * **`inline`, because this sits at the end of the add-goal row.** Its bottom
+ * lands on the title field's bottom rather than four pixels below it. The row
+ * below says `items-end` so the two agree rather than one overriding the other.
+ */
 function Submit({ label, pendingLabel }: { label: string; pendingLabel: string }) {
   const { pending } = useFormStatus()
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="rounded border px-3 py-2 text-sm font-medium disabled:opacity-50"
-    >
+    <PrimaryButton type="submit" disabled={pending} inline>
       {pending ? pendingLabel : label}
-    </button>
+    </PrimaryButton>
   )
 }
 
@@ -147,16 +162,27 @@ function Visibility({
 
   return (
     <details className="mt-1">
-      <summary className="cursor-pointer text-xs opacity-70">{summary}</summary>
+      <summary className="ds-link ds-type-note cursor-pointer">{summary}</summary>
 
-      <div className="mt-2 flex flex-col gap-2 border-l pl-3">
+      {/*
+        `border-l` becomes `ds-border-oatmeal`: an untokenised border here fell
+        through to the browser's default `currentColor`, so the rule took on
+        whatever ink the nearest text set and changed shade between the two
+        branches of the master switch.
+      */}
+      <div className="ds-border-oatmeal mt-2 flex flex-col gap-2 border-l pl-3">
         <form action={everywhereAction} className="flex items-center gap-2">
           <input type="hidden" name="goalId" value={goal.id} />
           {!everywhere ? <input type="hidden" name="hidden" value="on" /> : null}
-          <button type="submit" className="text-xs underline">
+          {/*
+            The two labels are `roster.spec.ts` locators — "Hide from every
+            Circle" and "Show in my Circles again" are matched by exact name —
+            so the strings are fixed and only the styling moves.
+          */}
+          <button type="submit" className="ds-link ds-type-note">
             {everywhere ? "Show in my Circles again" : "Hide from every Circle"}
           </button>
-          <span className="text-xs opacity-60">
+          <span className="ds-type-note ds-text-muted">
             {everywhere
               ? "Including any Circle you join later."
               : "Covers Circles you join later, which per-Circle switches cannot."}
@@ -164,24 +190,24 @@ function Visibility({
         </form>
 
         {circles.length === 0 ? (
-          <p className="text-xs opacity-60">
+          <p className="ds-type-note ds-text-muted">
             You&apos;re not in any active Circles, so there is nothing to hide it
             from yet.
           </p>
         ) : (
-          <ul className="flex flex-col gap-1">
+          <ul className="ds-type-note flex flex-col gap-1">
             {circles.map((c) => {
               const hidden = hiddenSet.has(c.id)
               return (
-                <li key={c.id} className="flex items-center gap-2 text-xs">
-                  <span className="min-w-32">{c.name}</span>
+                <li key={c.id} className="flex items-center gap-2">
+                  <span className="ds-text-primary min-w-32">{c.name}</span>
                   {/* Disabled, not hidden, and it says why. A switch that reads
                       "visible" while the goal is hidden everywhere would be a
                       lie about what other people can see. The underlying row is
                       left alone, so turning the master switch off restores
                       whatever was chosen here before. */}
                   {everywhere ? (
-                    <span className="opacity-50">hidden everywhere</span>
+                    <span className="ds-text-muted">hidden everywhere</span>
                   ) : (
                     <form action={circleAction}>
                       <input type="hidden" name="goalId" value={goal.id} />
@@ -189,7 +215,13 @@ function Visibility({
                       {!hidden ? (
                         <input type="hidden" name="hidden" value="on" />
                       ) : null}
-                      <button type="submit" className="underline opacity-70">
+                      {/*
+                        "show it" / "hide it" are matched as regexes by
+                        `roster.spec.ts`. The middot form carries the current
+                        state *and* the action in one control, which is why it
+                        reads oddly out of context and must not be tidied.
+                      */}
+                      <button type="submit" className="ds-link">
                         {hidden ? "hidden · show it" : "visible · hide it"}
                       </button>
                     </form>
@@ -200,7 +232,7 @@ function Visibility({
           </ul>
         )}
 
-        <p className="text-xs opacity-60">
+        <p className="ds-type-note ds-text-muted">
           Hiding covers the title only. The goal still counts toward your day and
           toward what your Circle sees you complete.
         </p>
@@ -270,20 +302,37 @@ export function GoalsPanel({
     // Named, so it is a landmark rather than an anonymous `section`. The
     // dashboard renders each goal title twice, here and in Today, and without a
     // handle on this one every locator that mentions a title is ambiguous.
-    <section aria-label="Your goals" className="flex flex-col gap-4">
-      <h2 className="text-lg font-semibold">Your goals</h2>
-
+    <Panel title="Your goals" aria-label="Your goals">
       <form ref={formRef} action={createAction} className="flex flex-col gap-2">
-        <div className="flex flex-wrap gap-2">
+        {/*
+          `items-end`, so the wrapped row lands the select and the button on the
+          title field's baseline instead of stretching all three to the tallest.
+          Both controls say `inline`, which resolves to `self-end` and agrees
+          with this rather than fighting it.
+        */}
+        <div className="flex flex-wrap items-end gap-2">
           <input
             name="title"
             required
             maxLength={100}
             autoComplete="off"
             placeholder="Run 5k"
+            /*
+              `aria-label`, not a visible label, and it is a locator:
+              `gates.spec.ts` and `goals.spec.ts` both use
+              `getByLabel("Goal title")`. The placeholder is not a label and
+              never was — it disappears the moment anyone types.
+            */
             aria-label="Goal title"
-            className="min-w-48 flex-1 rounded border px-3 py-2 text-sm"
+            className="ds-field min-w-48 flex-1"
           />
+
+          {/*
+            **Not the `Select` component.** That renders its own `<label>`;
+            this field is named by `aria-label` because the row has no room for
+            two visible labels and the placeholder option carries the meaning.
+            The iOS reasoning below is why the option list stays inline.
+          */}
           {/* Categories are seeded and referenced by slug. The UUIDs differ per
               environment, so the value here is never an id. */}
           <select
@@ -291,7 +340,7 @@ export function GoalsPanel({
             required
             defaultValue=""
             aria-label="Category"
-            className="rounded border px-3 py-2 text-sm"
+            className="ds-field"
           >
             {/*
               **Not `disabled`, and that is the whole fix for iOS.**
@@ -318,15 +367,13 @@ export function GoalsPanel({
           </select>
           <Submit label="Add goal" pendingLabel="Adding…" />
         </div>
-        <p className="text-xs opacity-60">
+        <p className="ds-type-note ds-text-muted">
           Up to 10 active goals. A day counts only when every active goal is
           checked off, so keep the list honest.
         </p>
 
         {createState && !createState.ok ? (
-          <p role="alert" className="text-sm text-red-600">
-            {createState.error}
-          </p>
+          <FormError>{createState.error}</FormError>
         ) : null}
       </form>
 
@@ -337,28 +384,40 @@ export function GoalsPanel({
         circleVisState,
         everywhereState,
       ].map((st, i) =>
-        st && !st.ok ? (
-          <p key={i} role="alert" className="text-sm text-red-600">
-            {st.error}
-          </p>
-        ) : null,
+        st && !st.ok ? <FormError key={i}>{st.error}</FormError> : null,
       )}
 
       {!active.length ? (
-        <p className="text-sm opacity-70">No active goals yet.</p>
+        <p className="ds-text-muted mt-3">No active goals yet.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        /*
+          Hairlines between siblings rather than a box each, the same as
+          `TodayPanel`. Ten bordered rows inside one card drew eleven rectangles
+          for one list.
+        */
+        <ul className="mt-3 flex flex-col">
           {active.map((g) => (
-            <li key={g.id} className="rounded border px-3 py-2 text-sm">
+            <li
+              key={g.id}
+              className="ds-border-oatmeal border-b py-3 last:border-b-0 last:pb-0"
+            >
               <div className="flex items-center justify-between gap-3">
                 <span className="flex items-center gap-2">
+                  {/*
+                    The category's own colour, straight from the row. Not a
+                    token: these are data, seeded per category, and the galaxy
+                    draws the same six hues — tokenising them would put the
+                    palette in two places.
+                  */}
                   <span
                     aria-hidden
                     className="inline-block size-3 shrink-0 rounded-full"
                     style={{ background: g.goal_categories?.color_hex }}
                   />
-                  <span>{g.title}</span>
-                  <span className="opacity-60">{g.goal_categories?.name}</span>
+                  <span className="ds-text-primary">{g.title}</span>
+                  <span className="ds-type-note ds-text-muted">
+                    {g.goal_categories?.name}
+                  </span>
                 </span>
 
                 <span className="flex shrink-0 items-center gap-3">
@@ -380,7 +439,7 @@ export function GoalsPanel({
                     <input type="hidden" name="goalId" value={g.id} />
                     <button
                       type="submit"
-                      className="text-xs underline opacity-70"
+                      className="ds-link ds-type-note"
                       title="Mark this goal finished. It stops counting toward your day."
                       onClick={(e) => {
                         if (
@@ -400,7 +459,7 @@ export function GoalsPanel({
                     <input type="hidden" name="goalId" value={g.id} />
                     <button
                       type="submit"
-                      className="text-xs underline opacity-70"
+                      className="ds-link ds-type-note"
                       // Archiving changes the denominator for today, so it can
                       // re-complete a day that was incomplete a moment ago.
                       title="Archive this goal"
@@ -433,6 +492,6 @@ export function GoalsPanel({
         full record. The page that renders this panel owns the link, so the two
         cannot both claim the same text.
       */}
-    </section>
+    </Panel>
   )
 }

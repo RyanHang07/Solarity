@@ -17,7 +17,7 @@ function ShareToggle({ shared }: { shared: boolean }) {
     <button
       type="submit"
       disabled={pending}
-      className="text-xs underline opacity-70 disabled:opacity-40"
+      className="ds-link ds-type-note disabled:opacity-40"
     >
       {pending ? "Saving…" : shared ? "Stop sharing" : "Share with your Circles"}
     </button>
@@ -71,7 +71,25 @@ export function TodayRoster({
         // unique handle.
         const name = m.username || m.display_name
         return (
-          <li key={m.user_id} className="rounded border text-sm">
+          /*
+            **`ds-panel`, not `ds-card`.** A card is a region of a screen; this
+            is a row in a list of ten, and ten cards would each claim to be a
+            section. `ds-panel` is the hairline box the system uses for a
+            control or a chip, which is what a collapsible row is.
+
+            The `<button>` keeps its role, its `aria-expanded` and its text
+            content untouched: `roster.spec.ts` locates rows by
+            `getByRole("button", { expanded: false })` and by
+            `filter({ hasText: "1 of 2" })`, so both the state attribute and the
+            progress string are load-bearing.
+
+            A plain block comment, not a JSX brace comment: this sits between
+            `return (` and the element, which is an *expression* position rather
+            than a JSX child. Braces there parse as a block, which is what broke
+            the file — the error lands on the `<li>` two lines below, so the
+            message points at innocent markup.
+          */
+          <li key={m.user_id} className="ds-panel">
             <button
               type="button"
               onClick={() => setOpenId(open ? null : m.user_id)}
@@ -83,11 +101,13 @@ export function TodayRoster({
                     roster is where you scan a Circle for people, and a face is
                     faster to scan than a handle. */}
                 <Avatar url={m.avatarUrl} name={name ?? ""} size={28} />
-                <span className="truncate">
+                <span className="ds-text-primary truncate">
                   {name}
-                  {m.is_self ? <span className="opacity-60"> (you)</span> : null}
+                  {m.is_self ? (
+                    <span className="ds-text-muted"> (you)</span>
+                  ) : null}
                   {m.role !== "member" ? (
-                    <span className="opacity-60"> · {m.role}</span>
+                    <span className="ds-text-muted"> · {m.role}</span>
                   ) : null}
                 </span>
               </span>
@@ -97,17 +117,17 @@ export function TodayRoster({
                     silently stops counting someone and the roster looks
                     identical to one where it does not. */}
                 {m.streak_grace ? (
-                  <span className="text-xs opacity-60">settling in</span>
+                  <span className="ds-type-note ds-text-muted">settling in</span>
                 ) : null}
-                <span className="opacity-70">{formatProgress(m)}</span>
-                <span aria-hidden className="opacity-40">
+                <span className="ds-text-muted">{formatProgress(m)}</span>
+                <span aria-hidden className="ds-text-muted">
                   {open ? "▾" : "▸"}
                 </span>
               </span>
             </button>
 
             {open ? (
-              <div className="border-t px-3 py-2">
+              <div className="ds-border-oatmeal border-t px-3 py-2">
                 {/*
                   Step 15b. **Inside the expanded panel, not on the row.**
                   The row is a `<button>` that toggles this open, and an anchor
@@ -122,14 +142,14 @@ export function TodayRoster({
                 {!m.is_self ? (
                   <Link
                     href={`/profile/${encodeURIComponent(m.username)}`}
-                    className="mb-2 inline-block text-xs underline opacity-70"
+                    className="ds-link ds-type-note mb-2 inline-block"
                   >
                     View {m.username}&apos;s profile
                   </Link>
                 ) : null}
 
                 {m.goals.length === 0 ? (
-                  <p className="text-xs opacity-60">
+                  <p className="ds-type-note ds-text-muted">
                     {m.is_self
                       ? "You have no active goals. Add one on your dashboard."
                       : "No active goals."}
@@ -139,7 +159,11 @@ export function TodayRoster({
                     {m.goals.map((g) => (
                       <li key={g.id} className="flex flex-col gap-0.5">
                         <span className="flex items-baseline justify-between gap-3">
-                          <span className={g.hidden ? "italic opacity-60" : ""}>
+                          <span
+                            className={
+                              g.hidden ? "ds-text-muted italic" : "ds-text-primary"
+                            }
+                          >
                             {/* Hidden means "not what it is", never "not
                                 whether it was done", which is why the tick
                                 still shows either way.
@@ -155,13 +179,22 @@ export function TodayRoster({
                             {g.hidden && !m.is_self ? "Hidden goal" : g.title}
                           </span>
                           {g.hidden && m.is_self ? (
-                            <span className="shrink-0 text-xs opacity-50">
+                            <span className="ds-type-note ds-text-muted shrink-0">
                               hidden here
                             </span>
                           ) : null}
+                          {/*
+                            The `aria-label` is the whole meaning here — a glyph
+                            carries none — so it stays exactly as it was. Flame
+                            when done, muted when not: the roster is scanned for
+                            who finished, and colour answers that faster than
+                            shape.
+                          */}
                           <span
                             aria-label={g.checked ? "done" : "not done"}
-                            className={`shrink-0 ${g.checked ? "" : "opacity-40"}`}
+                            className={`shrink-0 ${
+                              g.checked ? "ds-text-flame" : "ds-text-muted"
+                            }`}
                           >
                             {g.checked ? "✓" : "✗"}
                           </span>
@@ -204,7 +237,9 @@ export function TodayRoster({
 
                         {g.note ? (
                           <span className="flex flex-wrap items-baseline gap-2">
-                            <span className="text-xs opacity-70">{g.note}</span>
+                            <span className="ds-type-note ds-text-primary">
+                              {g.note}
+                            </span>
 
                             {/*
                               Only your own note, and only while the Circle is
@@ -226,7 +261,7 @@ export function TodayRoster({
                             ) : null}
 
                             {m.is_self && !g.note_shared && !frozen ? (
-                              <span className="text-xs opacity-50">
+                              <span className="ds-type-note ds-text-muted">
                                 (only you can see this)
                               </span>
                             ) : null}
@@ -256,7 +291,16 @@ export function TodayRoster({
         )
       })}
       {shareState && !shareState.ok ? (
-        <li role="alert" className="text-sm text-red-600">
+        /*
+          **A `<li>` because the parent is the roster's `<ul>`** — the tag is
+          fixed by the parent, not chosen.
+
+          It was the third `role="alert"` that `e2e/ui.ts` could not see, and
+          finding it is what turned two documented exceptions into a rule: the
+          helper now matches `:is(p, span, li)`, because the element follows the
+          markup and the locator follows the element.
+        */
+        <li role="alert" className="ds-text-danger ds-type-note">
           {shareState.error}
         </li>
       ) : null}

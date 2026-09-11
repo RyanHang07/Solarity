@@ -4,18 +4,27 @@ import { useActionState, useState } from "react"
 import { useFormStatus } from "react-dom"
 import Link from "next/link"
 import { deleteAccount } from "@/app/actions/settings"
+import { SecondaryButton } from "@/components/ui/button"
+import { FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
 
+/**
+ * **Disabled until the username matches**, which is the whole ceremony — so the
+ * disabled styling matters more here than anywhere else in the app.
+ * `.ds-cta:disabled` handles it: 0.45 opacity plus a grayscale knock-back, no
+ * hand-written `opacity-50` fighting it at a different value.
+ */
 function Submit({ disabled }: { disabled: boolean }) {
   const { pending } = useFormStatus()
   return (
-    <button
+    <SecondaryButton
       type="submit"
       disabled={pending || disabled}
-      className="rounded border border-red-600 px-3 py-2 text-sm font-medium text-red-600 disabled:opacity-50"
+      align="center"
+      className="ds-border-danger ds-text-danger"
     >
       {pending ? "Deleting…" : "Delete my account"}
-    </button>
+    </SecondaryButton>
   )
 }
 
@@ -68,10 +77,18 @@ export function DeleteAccountPanel({
   return (
     <section
       aria-labelledby="delete-account"
-      className="flex flex-col gap-3 border-t pt-6"
+      className="ds-border-oatmeal flex flex-col gap-3 border-t pt-6"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="delete-account" className="text-lg font-semibold">
+        {/*
+          **`ds-text-danger` on the heading, and it took a cascade fix to
+          work.** `ds-link` used to beat it by declaration order at equal
+          specificity, so "Delete your account" rendered oatmeal rather than red
+          for weeks — styled correctly in the markup and wrong on the screen,
+          with every automated check passing. Both link colours are `:where()`d
+          now so any `ds-text-*` beside them wins by construction.
+        */}
+        <h2 id="delete-account" className="ds-type-heading ds-text-danger">
           Delete your account
         </h2>
         {/*
@@ -81,7 +98,7 @@ export function DeleteAccountPanel({
           a total erasure the product does not perform would be a lie told at
           the exact moment someone is deciding whether to trust it.
         */}
-        <p className="text-sm opacity-70">
+        <p className="ds-text-muted">
           Removes your goals, notes, photos and Circle memberships. Your past
           check-ins stay, with your name removed, so the shared history in your
           Circles still adds up. This can&apos;t be undone.
@@ -89,9 +106,9 @@ export function DeleteAccountPanel({
       </div>
 
       {confirming ? (
-        <div className="flex flex-col gap-3 rounded border border-red-600 px-3 py-3">
+        <div className="ds-panel ds-border-danger flex flex-col gap-3 px-3 py-3">
           {ownedCircles.length ? (
-            <p className="text-sm">
+            <p className="ds-text-primary">
               You own{" "}
               <strong>
                 {ownedCircles.length === 1
@@ -103,17 +120,27 @@ export function DeleteAccountPanel({
             </p>
           ) : null}
 
-          <p className="text-sm">
+          <p className="ds-text-primary">
             Want a copy first?{" "}
-            <Link href="/settings/export" className="underline">
+            <Link href="/settings/export" className="ds-link">
               Download your data
             </Link>
             . You can&apos;t after this.
           </p>
 
           <form action={action} className="flex flex-col gap-2">
-            <label htmlFor="confirm-username" className="text-sm">
-              Type <strong>{username}</strong> to confirm
+            {/*
+              The label wraps only its own words — the `<strong>` is part of the
+              instruction, not a second element — so the accessible name is
+              exactly "Type ryahn1 to confirm", which is what somebody navigating
+              by field hears.
+            */}
+            <label
+              htmlFor="confirm-username"
+              className="ds-type-label ds-text-muted"
+            >
+              Type <strong className="ds-text-primary">{username}</strong> to
+              confirm
             </label>
             {/*
               `autoComplete="off"`, and a name that is not `username`. A field
@@ -127,9 +154,9 @@ export function DeleteAccountPanel({
               autoComplete="off"
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
-              className="max-w-64 rounded border px-3 py-2 text-sm"
+              className="ds-field max-w-64"
             />
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Submit disabled={!matches} />
               <button
                 type="button"
@@ -137,7 +164,7 @@ export function DeleteAccountPanel({
                   setConfirming(false)
                   setTyped("")
                 }}
-                className="rounded px-3 py-2 text-sm underline opacity-70"
+                className="ds-link"
               >
                 Cancel
               </button>
@@ -145,21 +172,22 @@ export function DeleteAccountPanel({
           </form>
         </div>
       ) : (
-        <button
-          type="button"
+        /*
+          **Danger-outlined, not flame.** The primary is reserved for the thing
+          a screen wants you to do, and settings does not want you to do this.
+          It is also the only control on the page that cannot be undone, so it
+          should look unlike every Save above it.
+        */
+        <SecondaryButton
           onClick={() => setConfirming(true)}
-          className="self-start rounded border px-3 py-2 text-sm font-medium"
+          className="ds-border-danger ds-text-danger"
         >
           Delete your account
-        </button>
+        </SecondaryButton>
       )}
 
       {/* Success redirects, so this can only ever be a failure. */}
-      {state && !state.ok ? (
-        <p role="alert" className="text-sm text-red-600">
-          {state.error}
-        </p>
-      ) : null}
+      {state && !state.ok ? <FormError>{state.error}</FormError> : null}
     </section>
   )
 }

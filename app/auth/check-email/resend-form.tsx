@@ -3,28 +3,33 @@
 import { useActionState, useEffect, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { resendConfirmation } from "@/app/actions/auth"
+import { SecondaryButton } from "@/components/ui/button"
+import { FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
 
 /** Supabase refuses a second email to one address inside this window. */
 const COOLDOWN_SECONDS = 60
 
+/**
+ * **Secondary, not primary.** The screen's actual instruction is "go and open
+ * the email"; this is the fallback for when that did not work. A flame button
+ * here would compete with the mail the person is supposed to be looking for,
+ * and the commonest reason somebody presses it is impatience rather than a real
+ * failure.
+ */
 function Submit({ waiting }: { waiting: number }) {
   const { pending } = useFormStatus()
   if (waiting > 0) {
     return (
-      <p className="text-sm opacity-60" aria-live="polite">
+      <p className="ds-type-note ds-text-muted" aria-live="polite">
         You can ask for another in {waiting}s.
       </p>
     )
   }
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="self-start rounded border px-4 py-2 text-sm font-medium disabled:opacity-50"
-    >
+    <SecondaryButton type="submit" disabled={pending}>
       {pending ? "Sending…" : "Send it again"}
-    </button>
+    </SecondaryButton>
   )
 }
 
@@ -80,16 +85,12 @@ export function ResendForm({ email }: { email: string }) {
       <Submit waiting={waiting} />
 
       {state?.ok && waiting > 0 ? (
-        <p className="text-sm opacity-70" aria-live="polite">
+        <p className="ds-type-note ds-text-muted" aria-live="polite">
           Sent. Check your inbox, and your spam folder.
         </p>
       ) : null}
 
-      {state && !state.ok ? (
-        <p role="alert" className="text-sm text-red-600">
-          {state.error}
-        </p>
-      ) : null}
+      {state && !state.ok ? <FormError>{state.error}</FormError> : null}
     </form>
   )
 }

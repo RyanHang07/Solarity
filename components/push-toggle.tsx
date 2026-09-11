@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { disablePush, enablePush, pushEnabledHere, pushSupported } from "@/lib/push-client"
 import { PushDenied } from "@/components/push-denied"
+import { SecondaryButton } from "@/components/ui/button"
 
 type ToggleState = "loading" | "on" | "off" | "denied" | "unsupported" | "unknown"
 
@@ -142,7 +143,9 @@ export function PushToggle() {
 
   return (
     <section id="notifications" aria-label="Notifications" className="flex flex-col gap-2">
-      <h2 className="text-lg font-semibold">Notifications on this device</h2>
+      <h2 className="ds-type-heading ds-text-primary">
+        Notifications on this device
+      </h2>
       {/*
         **"At most one a day" was true until step 19 and is not any more.** It
         was a promise on a settings screen, and the honest replacement names
@@ -151,7 +154,7 @@ export function PushToggle() {
         been the same class of drift as the policy pages promising notice
         nothing implements.
       */}
-      <p className="text-sm opacity-70">
+      <p className="ds-text-muted">
         Your daily digest, plus whichever updates you keep switched on below.
         Each device is separate, so turning this on here doesn&apos;t turn it on
         anywhere else.
@@ -160,7 +163,7 @@ export function PushToggle() {
       {state === "denied" ? <PushDenied /> : null}
 
       {state === "unsupported" ? (
-        <p className="text-sm opacity-80">
+        <p className="ds-text-primary">
           This browser can&apos;t send notifications. On an iPhone, add Solarity
           to your home screen and open it from there.
         </p>
@@ -176,36 +179,29 @@ export function PushToggle() {
       */}
       {state === "unknown" ? (
         <div className="flex flex-col gap-2">
-          <p className="text-sm opacity-80">
+          <p className="ds-text-primary">
             Couldn&apos;t check whether notifications are on for this device.
             They may well be. This usually means the app was still waking up.
           </p>
-          <button
-            type="button"
+          <SecondaryButton
             onClick={() => {
               setState("loading")
               void refresh()
             }}
-            className="self-start rounded border px-4 py-2 text-sm font-medium"
           >
             Check again
-          </button>
+          </SecondaryButton>
         </div>
       ) : null}
 
       {state === "on" || state === "off" ? (
-        <button
-          type="button"
-          onClick={state === "on" ? turnOff : turnOn}
-          disabled={busy}
-          className="self-start rounded border px-4 py-2 text-sm font-medium disabled:opacity-50"
-        >
+        <SecondaryButton onClick={state === "on" ? turnOff : turnOn} disabled={busy}>
           {busy
             ? "Working…"
             : state === "on"
               ? "Turn off notifications"
               : "Turn on notifications"}
-        </button>
+        </SecondaryButton>
       ) : null}
 
       {message ? (
@@ -214,7 +210,9 @@ export function PushToggle() {
           // now" are outcomes someone chose, and announcing them as errors is
           // how people learn to ignore the ones that matter.
           role={failed ? "alert" : "status"}
-          className={failed ? "text-sm text-red-600" : "text-sm opacity-70"}
+          className={
+            failed ? "ds-type-note ds-text-danger" : "ds-type-note ds-text-muted"
+          }
         >
           {message}
         </p>

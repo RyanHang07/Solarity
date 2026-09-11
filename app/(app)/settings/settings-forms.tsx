@@ -10,18 +10,24 @@ import {
   updateStatsVisibility,
   updateNotificationPrefs,
 } from "@/app/actions/settings"
+import { SecondaryButton } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/check"
+import { FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
 
+/**
+ * **`inline`, because every one of these sits at the end of a field row.** It
+ * matches `--ds-control-height` so Save lands on the input's bottom rather than
+ * four pixels below it — the misalignment that reads as sloppiness rather than
+ * as a measurement, and the one this whole settings screen used to show four
+ * times over.
+ */
 function Submit({ label, pendingLabel }: { label: string; pendingLabel: string }) {
   const { pending } = useFormStatus()
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="rounded border px-3 py-2 text-sm font-medium disabled:opacity-50"
-    >
+    <SecondaryButton type="submit" disabled={pending} inline>
       {pending ? pendingLabel : label}
-    </button>
+    </SecondaryButton>
   )
 }
 
@@ -29,11 +35,14 @@ function Submit({ label, pendingLabel }: { label: string; pendingLabel: string }
 function Result({ state, done }: { state: ActionResult | null; done: string }) {
   if (!state) return null
   return state.ok ? (
-    <p className="text-sm opacity-70">{done}</p>
-  ) : (
-    <p role="alert" className="text-sm text-red-600">
-      {state.error}
+    // **`role="status"`, not a bare paragraph.** A confirmation nobody is
+    // looking at is a confirmation nobody hears; this is the one moment on the
+    // screen where something changed without the page moving.
+    <p role="status" className="ds-type-note ds-text-muted">
+      {done}
     </p>
+  ) : (
+    <FormError>{state.error}</FormError>
   )
 }
 
@@ -51,10 +60,15 @@ export function UsernameForm({ current }: { current: string }) {
   // as well as to a test.
   return (
     <form aria-label="Username" action={action} className="flex flex-col gap-2">
-      <label htmlFor="username" className="text-sm font-medium">
+      <label htmlFor="username" className="ds-type-label ds-text-muted">
         Username
       </label>
-      <div className="flex flex-wrap gap-2">
+      {/*
+        `items-end`, so Save sits on the input's baseline rather than stretching
+        to the row. `inline` on the button resolves to `self-end` and the two
+        agree instead of one overriding the other.
+      */}
+      <div className="flex flex-wrap items-end gap-2">
         <input
           id="username"
           name="username"
@@ -64,11 +78,11 @@ export function UsernameForm({ current }: { current: string }) {
           pattern="[A-Za-z0-9_]+"
           autoComplete="off"
           defaultValue={current}
-          className="min-w-48 flex-1 rounded border px-3 py-2 text-sm"
+          className="ds-field min-w-48 flex-1"
         />
         <Submit label="Save" pendingLabel="Saving…" />
       </div>
-      <p className="text-xs opacity-60">
+      <p className="ds-type-note ds-text-muted">
         This is how your Circles recognise you, so it has to be unique. You can
         change it once every 14 days.
       </p>
@@ -108,24 +122,24 @@ export function TimezoneForm({
       action={action}
       className="flex flex-col gap-2"
     >
-      <label htmlFor="timezone" className="text-sm font-medium">
+      <label htmlFor="timezone" className="ds-type-label ds-text-muted">
         Check-in timezone
       </label>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-end gap-2">
         <input
           id="timezone"
           name="timezone"
           required
           autoComplete="off"
           defaultValue={current}
-          className="min-w-48 flex-1 rounded border px-3 py-2 text-sm"
+          className="ds-field min-w-48 flex-1"
         />
         <Submit label="Save" pendingLabel="Saving…" />
       </div>
 
       {detected && detected !== current && detected !== pending ? (
-        <p className="text-xs opacity-60">
-          This device says <strong>{detected}</strong>.
+        <p className="ds-type-note ds-text-muted">
+          This device says <strong className="ds-text-primary">{detected}</strong>.
         </p>
       ) : null}
 
@@ -136,12 +150,13 @@ export function TimezoneForm({
         today is something it is not.
       */}
       {pending ? (
-        <p className="text-xs opacity-70">
-          <strong>{pending}</strong> takes over at your next daily reset. Until
-          then your day still ends on {current} time.
+        <p className="ds-type-note ds-text-muted">
+          <strong className="ds-text-primary">{pending}</strong> takes over at
+          your next daily reset. Until then your day still ends on {current}{" "}
+          time.
         </p>
       ) : (
-        <p className="text-xs opacity-60">
+        <p className="ds-type-note ds-text-muted">
           Your day resets at 2 AM in {current}. A change here takes effect at
           your next daily reset, so today keeps the boundary it started with.
         </p>
@@ -183,7 +198,18 @@ export function TodayScreenForm({ current }: { current: string }) {
       action={action}
       className="flex scroll-mt-6 flex-col gap-2"
     >
-      <span className="text-sm font-medium">Daily check-in screen</span>
+      {/*
+        **A `<span>` rather than the `RadioGroup`'s own `<legend>`**, because
+        this form's accessible name comes from `aria-label` on the `<form>` and
+        a `<fieldset>` here would announce "Daily check-in screen" twice —
+        once as the landmark, once as the group. The radios below are plain
+        `ds-check` inputs for the same reason.
+
+        `gates.spec.ts` locates this by `getByRole("form", { name: "Daily
+        check-in screen" })`, so the label on the form is load-bearing and the
+        visible copy has to match it.
+      */}
+      <span className="ds-type-label ds-text-muted">Daily check-in screen</span>
 
       {/*
         Radios rather than a select. Three options, all of which should be
@@ -192,12 +218,16 @@ export function TodayScreenForm({ current }: { current: string }) {
       */}
       <div className="flex flex-col gap-1">
         {MODES.map(([value, label]) => (
-          <label key={value} className="flex items-center gap-2 text-sm">
+          <label
+            key={value}
+            className="ds-text-primary flex items-center gap-2.5"
+          >
             <input
               type="radio"
               name="mode"
               value={value}
               defaultChecked={current === value}
+              className="ds-check"
             />
             {label}
           </label>
@@ -209,7 +239,7 @@ export function TodayScreenForm({ current }: { current: string }) {
         none of the three ever shows the screen on a day you have finished. That
         is also why the first option is not called "Always".
       */}
-      <p className="text-xs opacity-60">
+      <p className="ds-type-note ds-text-muted">
         Shown only when you still have goals to check off. A finished day always
         goes straight to your dashboard.
       </p>
@@ -247,18 +277,19 @@ export function PushNameForm({ current }: { current: boolean }) {
       action={action}
       className="flex scroll-mt-6 flex-col gap-2"
     >
-      <span className="text-sm font-medium">What notifications say</span>
+      <span className="ds-type-label ds-text-muted">What notifications say</span>
 
-      <label className="flex items-center gap-2 text-sm">
-        {/*
-          A checkbox sends nothing when unticked, which is why the action reads
-          absence as off rather than looking for a "false".
-        */}
-        <input type="checkbox" name="show" defaultChecked={current} />
-        Name the Circle in notifications
-      </label>
+      {/*
+        A checkbox sends nothing when unticked, which is why the action reads
+        absence as off rather than looking for a "false".
+      */}
+      <Checkbox
+        name="show"
+        defaultChecked={current}
+        label="Name the Circle in notifications"
+      />
 
-      <p className="text-xs opacity-60">
+      <p className="ds-type-note ds-text-muted">
         On, a notification says which Circle it is about, and that name appears
         on your lock screen. Off, every notification reads the same and you open
         the app to find out which one. Goals are never named either way.
@@ -298,15 +329,16 @@ export function StatsVisibilityForm({ current }: { current: boolean }) {
       action={action}
       className="flex scroll-mt-6 flex-col gap-2"
     >
-      <span className="text-sm font-medium">Stats on your profile</span>
+      <span className="ds-type-label ds-text-muted">Stats on your profile</span>
 
-      <label className="flex items-center gap-2 text-sm">
-        {/* Unticked sends nothing, which the action reads as off. */}
-        <input type="checkbox" name="visible" defaultChecked={current} />
-        Show my streaks and totals
-      </label>
+      {/* Unticked sends nothing, which the action reads as off. */}
+      <Checkbox
+        name="visible"
+        defaultChecked={current}
+        label="Show my streaks and totals"
+      />
 
-      <p className="text-xs opacity-60">
+      <p className="ds-type-note ds-text-muted">
         On, anyone signed in who opens your profile sees your current streak,
         longest streak, days completed and goals achieved. Off, they see nothing
         about your numbers. Either way your username, picture and the month you
@@ -383,21 +415,28 @@ export function NotificationPrefsForm({
       action={action}
       className="flex flex-col gap-3"
     >
-      <span className="text-sm font-medium">What you hear about</span>
+      <span className="ds-type-label ds-text-muted">What you hear about</span>
 
+      {/*
+        `Checkbox` owns the hint now, which moves it from a hand-measured
+        `pl-6` to the component's own `pl-[1.625rem]` — the box plus its gap, so
+        the explanation lines up with the label's text rather than near it. It is
+        also `aria-describedby`d rather than floating loose, so each switch is
+        announced with the sentence that says what it costs.
+      */}
       <div className="flex flex-col gap-3">
         {rows.map((row) => (
-          <div key={row.name} className="flex flex-col gap-1">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name={row.name} defaultChecked={row.checked} />
-              {row.label}
-            </label>
-            <p className="pl-6 text-xs opacity-60">{row.hint}</p>
-          </div>
+          <Checkbox
+            key={row.name}
+            name={row.name}
+            defaultChecked={row.checked}
+            label={row.label}
+            note={row.hint}
+          />
         ))}
       </div>
 
-      <p className="text-xs opacity-60">
+      <p className="ds-type-note ds-text-muted">
         Your daily digest is separate and always arrives. These are the updates
         that reach you while the day is still going.
       </p>

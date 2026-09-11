@@ -105,8 +105,14 @@ export default async function SettingsPage() {
   return (
     <div className="flex flex-col gap-8">
       <header className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-semibold">Settings</h1>
-        <Link href="/dashboard" className="text-sm underline opacity-70">
+        <h1 className="ds-type-title ds-text-primary">Settings</h1>
+        {/*
+          The name stays "Back to dashboard" rather than shortening to
+          "Dashboard": `invite.spec.ts` locates the *Circle's* settings link
+          with `exact: true` because this page's header once collided with it,
+          and a shorter name here walks back toward that.
+        */}
+        <Link href="/dashboard" className="ds-link shrink-0">
           Back to dashboard
         </Link>
       </header>
@@ -147,8 +153,8 @@ export default async function SettingsPage() {
       <PushToggle />
 
       <section aria-label="Your data" className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Your data</h2>
-        <p className="text-sm opacity-70">
+        <h2 className="ds-type-heading ds-text-primary">Your data</h2>
+        <p className="ds-text-muted">
           Everything Solarity holds about you: your goals, check-ins, Circles and
           streaks, as one JSON file.
         </p>
@@ -158,7 +164,7 @@ export default async function SettingsPage() {
           building a Blob and a synthetic click in the browser. It also survives
           being opened in a new tab.
         */}
-        <Link href="/settings/export" className="text-sm underline">
+        <Link href="/settings/export" className="ds-link self-start">
           Download your data
         </Link>
       </section>
@@ -173,26 +179,26 @@ export default async function SettingsPage() {
       */}
       {isAdmin ? (
         <section aria-label="Admin" className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold">Admin</h2>
-          <Link href="/admin" className="self-start text-sm underline">
+          <h2 className="ds-type-heading ds-text-primary">Admin</h2>
+          <Link href="/admin" className="ds-link self-start">
             Reports and administrators
           </Link>
         </section>
       ) : null}
 
       <section aria-label="Legal" className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Legal</h2>
+        <h2 className="ds-type-heading ds-text-primary">Legal</h2>
         {/*
           Also linked from `/` and `/auth/sign-in`. Here as well because this is
           where someone looks when they want to know what happens to their
           photos, and a policy nobody can find from inside the app is a policy
           written for a consent-screen reviewer rather than for a user.
         */}
-        <div className="flex gap-4">
-          <Link href="/privacy" className="text-sm underline">
+        <div className="flex flex-wrap items-center gap-4">
+          <Link href="/privacy" className="ds-link">
             Privacy
           </Link>
-          <Link href="/terms" className="text-sm underline">
+          <Link href="/terms" className="ds-link">
             Terms
           </Link>
         </div>

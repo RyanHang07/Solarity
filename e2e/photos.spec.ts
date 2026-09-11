@@ -16,6 +16,7 @@ import {
 } from "./db"
 import { photoKey } from "@/lib/photo-upload"
 import { storageStateFor } from "./session"
+import { errorAlert } from "./ui"
 import fs from "node:fs"
 import path from "node:path"
 
@@ -390,10 +391,46 @@ test("a photo picked on the dashboard reaches a circle-mate, and hiding takes it
       "the file input is display:none, which iOS will not hand a file back from",
     ).not.toBe("none")
 
+    /**
+     * **The refusal path, asserted before the happy one**, because it needs the
+     * same row and costs nothing: `inspect()` is client-side, so this spends no
+     * round trip, no storage object and no rate-limit token.
+     *
+     * **Declared `image/png`, and the bytes are not.** That is the assertion.
+     * `inspect()` sniffs the leading bytes and ignores both the filename and the
+     * declared MIME type, so a check that trusted either would pass this file
+     * and fail in Storage after the upload had already been paid for. Sending a
+     * `.txt` named honestly would have proved only that an extension check
+     * exists.
+     *
+     * Until 11 September nothing could assert this at all. The message renders
+     * in a `<span role="alert">` — the parent is phrasing content, so a `<p>`
+     * would be invalid nesting — and `e2e/ui.ts` matched `p[role="alert"]` only.
+     * The element was correct, the locator was narrow, and three error paths sat
+     * untestable behind it with comments saying so.
+     */
+    await picker.setInputFiles({
+      name: "not-really.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("this is text, not an image"),
+    })
+    await expect(
+      errorAlert(row),
+      "a non-image was accepted, or its refusal is not announced",
+    ).toHaveText(/doesn't look like a photo/i)
+
+    // And it must not have uploaded anything on the way to refusing.
+    await expect(row.getByRole("button", { name: "Remove photo" })).toHaveCount(0)
+
     // Checked rather than assumed. A wrong path makes `setInputFiles` fail
     // with a message about the locator, which sends you looking at the DOM.
     expect(fs.existsSync(FIXTURE), `fixture missing at ${FIXTURE}`).toBe(true)
     await picker.setInputFiles(FIXTURE)
+
+    // The refusal clears when a real photo follows it: `upload()` opens with
+    // `setError(null)`, and an error that outlived its cause would be worse
+    // than one that never appeared.
+    await expect(errorAlert(row)).toHaveCount(0)
 
     // `Remove photo` appears only when `photo_url` is set, so waiting for it
     // waits for the whole chain: decode, re-encode, upload, and the action.

@@ -406,10 +406,19 @@ export function GalaxyCard({
     if (!explainAbsence) return null
     return (
       <section aria-labelledby={id} className="flex flex-col gap-2">
-        <h2 id={id} className="text-base font-semibold">
+        <h2 id={id} className="ds-type-heading ds-text-primary">
           {title}
         </h2>
-        <p role="alert" className="rounded border px-3 py-2 text-sm text-red-600">
+        {/*
+          `ds-border-danger` after `ds-panel` in the class list is not enough on
+          its own — `.ds-panel` sets a border colour too, and it is `:where()`d
+          for exactly this reason so a companion token can win. See the cascade
+          note in `docs/v1/design-port.md`.
+        */}
+        <p
+          role="alert"
+          className="ds-panel ds-border-danger ds-text-danger px-3 py-2"
+        >
           The canvas could not start: {reason ?? "no reason given"}
         </p>
       </section>
@@ -424,7 +433,7 @@ export function GalaxyCard({
         a spec cannot describe. The canvas itself stays `aria-hidden`: it
         repeats what the page already said, in worse words.
       */}
-      <h2 id={id} className="text-base font-semibold">
+      <h2 id={id} className="ds-type-heading ds-text-primary">
         {title}
       </h2>
 
@@ -442,7 +451,15 @@ export function GalaxyCard({
         `opts.compact ?? isCompactLayout(...)`, so supplying it at all replaces
         the answer rather than defaulting it.
       */}
-      <Viewhole closedClassName="h-64 rounded border md:h-96">
+      {/*
+        **`ds-card`, and the header comment above is the reason.** "The frame is
+        the app's, not the galaxy's — the same card as every other block in the
+        column." That was `rounded border` when every other block was too; now
+        they are all `ds-card`, so leaving this one on the old frame would have
+        made the galaxy the one panel that did not match — quietly re-creating
+        the second design system the comment exists to forbid.
+      */}
+      <Viewhole closedClassName="ds-card h-64 md:h-96">
         <GalaxyView
           snapshot={snapshot}
           /*
@@ -570,7 +587,14 @@ export function GalaxyCard({
         {hover ? (
           <span
             aria-hidden
-            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded border border-current bg-[var(--galaxy-sky)] px-2 py-1 text-xs text-[#f4f1de] opacity-90"
+            /*
+              **On-sky chrome, so it keeps its own colour.** `#f4f1de` on
+              `--galaxy-sky` is the module's palette, measured against the
+              canvas rather than against the abyss — `ds-text-primary` here
+              would be an app token used on a surface the app does not own.
+              Only the *type* is tokenised.
+            */
+            className="ds-type-note pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded border border-current bg-[var(--galaxy-sky)] px-2 py-1 text-[#f4f1de] opacity-90"
             style={{ left: hover.x, top: hover.y - 10 }}
           >
             {hover.label}&apos;s galaxy
@@ -609,7 +633,8 @@ export function GalaxyCard({
                   }
                 : undefined
             }
-            className="absolute right-2 top-2 z-10 rounded border border-current px-2 py-1 text-xs text-[#f4f1de] opacity-70 hover:opacity-100"
+            /* On the sky as well; see the tooltip above. */
+            className="ds-type-note absolute right-2 top-2 z-10 rounded border border-current px-2 py-1 text-[#f4f1de] opacity-70 hover:opacity-100"
           >
             {expanded ? "Close" : "Expand"}
           </button>
@@ -642,7 +667,7 @@ export function GalaxyCard({
         respecting it looks identical to failing.
       */}
       {state === "ready" && reducedMotion ? (
-        <p className="text-xs opacity-60">
+        <p className="ds-type-note ds-text-muted">
           Reduce Motion is on in your device settings, so the planets hold
           still. Everything else here is live.
         </p>
@@ -657,7 +682,7 @@ export function GalaxyCard({
         never possible.
       */}
       {showDiagnostics && facts ? (
-        <ul className="rounded border px-3 py-2 text-xs opacity-70">
+        <ul className="ds-panel ds-type-note ds-text-muted px-3 py-2">
           {facts.map((fact) => (
             <li key={fact} className="tabular-nums">
               {fact}

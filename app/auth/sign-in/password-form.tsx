@@ -4,18 +4,23 @@ import { useActionState, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { signInWithPassword } from "@/app/actions/auth"
 import { Turnstile } from "@/components/turnstile"
+import { PrimaryButton } from "@/components/ui/button"
+import { Field, FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
 
+/**
+ * **`full`, not the default `self-start`.** A sign-in button that is only as
+ * wide as its label sits in a column of full-width fields looking like it was
+ * left behind — and this is the one control on the screen everybody is aiming
+ * for. The label still changes under `useFormStatus`, which is the whole reason
+ * this is a separate component: `pending` is only readable *inside* the form.
+ */
 function Submit() {
   const { pending } = useFormStatus()
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="rounded border px-4 py-2 text-sm font-medium disabled:opacity-50"
-    >
+    <PrimaryButton type="submit" disabled={pending} full>
       {pending ? "Signing in…" : "Sign in"}
-    </button>
+    </PrimaryButton>
   )
 }
 
@@ -59,37 +64,21 @@ export function PasswordForm({ next }: { next: string }) {
     <form action={action} className="flex w-full flex-col gap-3">
       <input type="hidden" name="next" value={next} />
 
-      <label className="flex flex-col gap-1 text-sm">
-        Email
-        <input
-          type="email"
-          name="email"
-          required
-          autoComplete="email"
-          className="rounded border px-3 py-2"
-        />
-      </label>
+      <Field label="Email" type="email" name="email" required autoComplete="email" />
 
-      <label className="flex flex-col gap-1 text-sm">
-        Password
-        <input
-          type="password"
-          name="password"
-          required
-          autoComplete="current-password"
-          className="rounded border px-3 py-2"
-        />
-      </label>
+      <Field
+        label="Password"
+        type="password"
+        name="password"
+        required
+        autoComplete="current-password"
+      />
 
       <Turnstile resetKey={attempts} />
 
       <Submit />
 
-      {state && !state.ok ? (
-        <p role="alert" className="text-sm text-red-600">
-          {state.error}
-        </p>
-      ) : null}
+      {state && !state.ok ? <FormError>{state.error}</FormError> : null}
     </form>
   )
 }

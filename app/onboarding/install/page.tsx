@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { OnboardingShell } from "@/components/onboarding/onboarding-shell"
 import { createClient } from "@/lib/supabase/server"
 import { InstallNudge } from "./install-nudge"
 
@@ -35,11 +36,17 @@ export default async function InstallPage() {
   if (!user) redirect("/auth/sign-in?next=/onboarding")
 
   return (
-    <main className="flex min-h-full flex-1 flex-col items-center justify-center gap-6 p-8">
+    /*
+      **No `title` on the shell**, because this screen's heading and lede both
+      change once the browser reports the app is already installed — a fact only
+      the client has. The nudge renders its own with `OnboardingHeading`, which
+      is the same markup the shell would have produced.
+    */
+    <OnboardingShell>
       {/* The permission ask comes after this, never before: on iOS push works
           only inside an installed PWA, so asking first would spend the one
           permission a browser grants on a browser that cannot deliver. */}
       <InstallNudge next="/onboarding/notifications" />
-    </main>
+    </OnboardingShell>
   )
 }

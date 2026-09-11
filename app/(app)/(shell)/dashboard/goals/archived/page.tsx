@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
+import { Panel } from "@/components/ui/panel"
 import { createClient } from "@/lib/supabase/server"
 import { getRetiredGoals } from "@/lib/supabase/goal-record"
 
@@ -38,48 +39,60 @@ export default async function ArchivedGoalsPage() {
   const goals = await getRetiredGoals(supabase, user.id)
 
   return (
-    <section aria-label="Archived and achieved" className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Archived and achieved</h2>
-        <Link href="/dashboard/goals" className="text-sm underline opacity-70">
+    <Panel
+      title="Archived and achieved"
+      aria-label="Archived and achieved"
+      action={
+        <Link href="/dashboard/goals" className="ds-link">
           ← Active goals
         </Link>
-      </div>
-
+      }
+    >
       {goals.length === 0 ? (
-        <p className="text-sm opacity-70">
+        <p className="ds-text-muted">
           Nothing here yet. Goals you achieve or archive are kept, with every
           day you checked them off.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col">
           {goals.map((g) => (
-            <li key={g.id} className="rounded border text-sm">
-              <Link href={`/dashboard/goals/${g.id}`} className="flex flex-col gap-1 px-3 py-2">
+            <li
+              key={g.id}
+              className="ds-border-oatmeal border-b last:border-b-0"
+            >
+              <Link
+                href={`/dashboard/goals/${g.id}`}
+                className="flex flex-col gap-1 py-3"
+              >
                 <span className="flex items-center gap-2">
                   <span
                     aria-hidden
                     className="inline-block size-3 shrink-0 rounded-full"
                     style={{ background: g.color ?? undefined }}
                   />
-                  <span className="font-medium">{g.title}</span>
+                  {/*
+                    `ds-type-label`, not `font-medium`. The token is 0.875rem
+                    at weight 500 — identical values, and one of them stays in
+                    step with the scale.
+                  */}
+                  <span className="ds-type-label ds-text-primary">{g.title}</span>
                   {/*
                     The distinction, in a word. Achieving is finishing;
                     archiving is stopping. A record that conflated them would be
                     telling somebody they completed something they abandoned.
                   */}
-                  <span className="opacity-60">
+                  <span className="ds-type-note ds-text-muted">
                     {g.achievedAt ? "achieved" : "archived"}
                   </span>
                 </span>
 
-                <span className="text-xs opacity-70">
+                <span className="ds-type-note ds-text-muted">
                   {on(g.createdAt)} –{" "}
                   {on(g.achievedAt ?? g.archivedAt ?? g.createdAt)}
                   {g.category ? ` · ${g.category}` : null}
                 </span>
 
-                <span className="text-xs opacity-60">
+                <span className="ds-type-note ds-text-muted">
                   {/* The number that makes this a record rather than a list. */}
                   {g.checkins === 1 ? "1 day checked off" : `${g.checkins} days checked off`}
                   {g.deadline ? ` · deadline was ${on(g.deadline)}` : null}
@@ -89,6 +102,6 @@ export default async function ArchivedGoalsPage() {
           ))}
         </ul>
       )}
-    </section>
+    </Panel>
   )
 }

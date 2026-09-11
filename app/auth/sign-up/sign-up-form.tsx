@@ -5,18 +5,16 @@ import { useFormStatus } from "react-dom"
 import { signUpWithPassword } from "@/app/actions/auth"
 import { PasswordFields } from "@/components/password-fields"
 import { Turnstile } from "@/components/turnstile"
+import { PrimaryButton } from "@/components/ui/button"
+import { Field, FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
 
 function Submit({ disabled }: { disabled: boolean }) {
   const { pending } = useFormStatus()
   return (
-    <button
-      type="submit"
-      disabled={pending || disabled}
-      className="rounded border px-4 py-2 text-sm font-medium disabled:opacity-50"
-    >
+    <PrimaryButton type="submit" disabled={pending || disabled} full>
       {pending ? "Creating…" : "Create account"}
-    </button>
+    </PrimaryButton>
   )
 }
 
@@ -66,16 +64,7 @@ export function SignUpForm() {
 
   return (
     <form action={action} className="flex w-full flex-col gap-3">
-      <label className="flex flex-col gap-1 text-sm">
-        Email
-        <input
-          type="email"
-          name="email"
-          required
-          autoComplete="email"
-          className="rounded border px-3 py-2"
-        />
-      </label>
+      <Field label="Email" type="email" name="email" required autoComplete="email" />
 
       <PasswordFields onValidityChange={setPasswordValid} />
 
@@ -83,11 +72,7 @@ export function SignUpForm() {
 
       <Submit disabled={!passwordValid} />
 
-      {state && !state.ok ? (
-        <p role="alert" className="text-sm text-red-600">
-          {state.error}
-        </p>
-      ) : null}
+      {state && !state.ok ? <FormError>{state.error}</FormError> : null}
     </form>
   )
 }

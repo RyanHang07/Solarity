@@ -3,18 +3,22 @@
 import { useActionState } from "react"
 import { useFormStatus } from "react-dom"
 import { resolveReport } from "@/app/actions/admin"
+import { SecondaryButton } from "@/components/ui/button"
+import { FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
 
+/**
+ * **All three outcomes are secondary, and none is primary.** Triage has no
+ * recommended answer — that is the whole point of offering three — so promoting
+ * one with a flame button would be the screen taking a position it is not
+ * entitled to.
+ */
 function Submit({ label }: { label: string }) {
   const { pending } = useFormStatus()
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="rounded border px-3 py-2 text-sm font-medium disabled:opacity-50"
-    >
+    <SecondaryButton type="submit" disabled={pending} align="center">
       {pending ? "Saving…" : label}
-    </button>
+    </SecondaryButton>
   )
 }
 
@@ -51,8 +55,11 @@ export function ResolveForm({
       : [{ value: "pending", label: "Reopen" }]
 
   return (
-    <section aria-label="Outcome" className="flex flex-col gap-2 border-t pt-4">
-      <div className="flex flex-wrap gap-2">
+    <section
+      aria-label="Outcome"
+      className="ds-border-oatmeal flex flex-col gap-2 border-t pt-4"
+    >
+      <div className="flex flex-wrap items-center gap-2">
         {choices.map((c) => (
           <form key={c.value} action={action}>
             <input type="hidden" name="reportId" value={reportId} />
@@ -62,7 +69,7 @@ export function ResolveForm({
         ))}
       </div>
 
-      <p className="text-xs opacity-60">
+      <p className="ds-type-note ds-text-muted">
         {/*
           Says what the buttons do not do. Somebody marking a report "actioned"
           on a screen with no removal control could reasonably assume the
@@ -72,11 +79,7 @@ export function ResolveForm({
         records what you decided.
       </p>
 
-      {state && !state.ok ? (
-        <p role="alert" className="text-sm text-red-600">
-          {state.error}
-        </p>
-      ) : null}
+      {state && !state.ok ? <FormError>{state.error}</FormError> : null}
     </section>
   )
 }

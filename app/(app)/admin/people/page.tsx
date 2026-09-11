@@ -21,23 +21,23 @@ export default async function AdminPeoplePage() {
   return (
     <div className="flex flex-col gap-5">
       <section aria-label="Administrators" className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Administrators</h2>
+        <h2 className="ds-type-heading ds-text-primary">Administrators</h2>
         <ul className="flex flex-col gap-2">
           {admins.map((a) => (
             <li
               key={a.user_id}
-              className="flex items-center justify-between gap-3 rounded border px-3 py-2 text-sm"
+              className="ds-panel flex items-center justify-between gap-3 px-3 py-2"
             >
-              <span>
+              <span className="ds-text-primary">
                 {a.username}
                 {a.display_name ? (
-                  <span className="opacity-60"> · {a.display_name}</span>
+                  <span className="ds-text-muted"> · {a.display_name}</span>
                 ) : null}
               </span>
             </li>
           ))}
         </ul>
-        <p className="text-xs opacity-60">
+        <p className="ds-type-note ds-text-muted">
           {/*
             Says the two rules before somebody discovers them as refusals. Both
             are enforced in the database; this is the courtesy.

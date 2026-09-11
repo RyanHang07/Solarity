@@ -3,6 +3,8 @@
 import { useActionState, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { reportContent, type ReportType } from "@/app/actions/moderation"
+import { SecondaryButton } from "@/components/ui/button"
+import { FormError } from "@/components/ui/field"
 import { checkinReference } from "@/lib/report-reference"
 import type { ActionResult } from "@/lib/errors"
 
@@ -47,15 +49,22 @@ export function ReportCheckin({
     // No form to return to. Re-offering the control invites a second report
     // about the same thing, which costs the reporter one of ten a day and tells
     // a moderator nothing new.
-    return <span className="text-xs opacity-60">Reported. Thanks.</span>
+    return (
+      <span className="ds-type-note ds-text-muted">Reported. Thanks.</span>
+    )
   }
 
   if (!open) {
     return (
+      /*
+        **Muted, not danger, and quieter than the note it sits beside.** This is
+        the least likely control on the row to be wanted, and colouring it as an
+        alarm would make every shared note look like a problem.
+      */
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="self-start text-xs underline opacity-50"
+        className="ds-link ds-type-note ds-text-muted self-start"
       >
         Report this {label}
       </button>
@@ -63,7 +72,7 @@ export function ReportCheckin({
   }
 
   return (
-    <form action={action} className="flex flex-col gap-2 rounded border px-2 py-2">
+    <form action={action} className="ds-panel flex flex-col gap-2 px-2 py-2">
       <input type="hidden" name="userId" value={userId} />
       <input type="hidden" name="contentType" value={contentType} />
       {/*
@@ -77,13 +86,20 @@ export function ReportCheckin({
         value={checkinReference(userId, goalId, checkinDate)}
       />
 
-      <label className="text-xs">
+      {/*
+        **The label still wraps the textarea here, and that is safe** — it
+        contains nothing but the label text, so the accessible name is exactly
+        "What's wrong with this note?". The rule the port keeps re-learning is
+        that a `<label>` must hold *only* the label; wrapping is fine when it
+        does. Not converted to `Field`, which renders an `<input>`.
+      */}
+      <label className="ds-type-note ds-text-muted">
         What&apos;s wrong with this {label}?
         <textarea
           name="reason"
           rows={2}
           maxLength={500}
-          className="mt-1 w-full rounded border px-2 py-1 text-xs"
+          className="ds-field mt-1 w-full"
         />
       </label>
 
@@ -92,17 +108,23 @@ export function ReportCheckin({
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="text-xs underline opacity-70"
+          className="ds-link ds-type-note"
         >
           Cancel
         </button>
       </div>
 
-      {state && !state.ok ? (
-        <span role="alert" className="text-xs text-red-600">
-          {state.error}
-        </span>
-      ) : null}
+      {/*
+        **`FormError`, because a `<p>` is legal here** — the parent is a
+        `<form>`, not phrasing content, unlike `photo-button.tsx`.
+
+        This was a hand-rolled `<span>` for one tranche, matching
+        `photo-button.tsx` only so the two reported the same way while
+        `e2e/ui.ts` could see neither. That reason expired when the audit of
+        11 September widened the helper, and a special case kept alive to
+        resemble another special case is worth deleting.
+      */}
+      {state && !state.ok ? <FormError>{state.error}</FormError> : null}
     </form>
   )
 }
@@ -110,12 +132,15 @@ export function ReportCheckin({
 function Submit() {
   const { pending } = useFormStatus()
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="rounded border px-2 py-1 text-xs font-medium disabled:opacity-50"
-    >
+    /*
+      **`align="center"`, and not `inline`.** `inline` resolves to `self-end`,
+      which is right beside a labelled field — the button's bottom lines up with
+      the input's. Here the neighbour is a "Cancel" link in a row that already
+      says `items-center`, so `self-end` would drop this button below it and
+      read as a spacing mistake. `inline` is for fields; this is a button row.
+    */
+    <SecondaryButton type="submit" disabled={pending} align="center">
       {pending ? "Sending…" : "Send report"}
-    </button>
+    </SecondaryButton>
   )
 }

@@ -54,13 +54,23 @@ e2e/.auth/
 
 # graphify
 .graphifyignore
-# A machine-local absolute path. Meaningless in anyone else's clone.
-graphify-out/.graphify_root
 # Content-hashed AST cache. It makes the *next* run fast on one machine; in the
 # repository it is 89 files that get renamed wholesale on every regeneration.
 # `graph.json` and `manifest.json` are the artefacts worth tracking.
 graphify-out/cache/
-graphify-out/.graphify_analysis.json
+#
+# **`**/`, not a bare path, and the bare path is why these leaked.** These three
+# rules used to read `graphify-out/.graphify_root` and so on, which matches the
+# root output and nothing else. Every dated snapshot — `graphify-out/2026-09-01/`
+# and its siblings — carried its own copy straight past them: a machine-local
+# absolute path, and two artefacts the rules above say are not worth tracking,
+# committed three times over.
+#
+# A gitignore rule written against one directory stops being true the moment the
+# tool writes a second one.
+**/.graphify_root
+**/.graphify_analysis.json
+**/.graphify_labels.json
 
 # cursor
 .cursor/

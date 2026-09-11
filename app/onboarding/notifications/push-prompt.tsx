@@ -4,6 +4,9 @@ import { useState, useSyncExternalStore } from "react"
 import { useRouter } from "next/navigation"
 import { enablePush, permissionNow, pushSupported, type PushOutcome } from "@/lib/push-client"
 import { PushDenied } from "@/components/push-denied"
+import { OnboardingHeading } from "@/components/onboarding/onboarding-shell"
+import { PrimaryButton, SecondaryButton } from "@/components/ui/button"
+import { FormError } from "@/components/ui/field"
 
 /** Permission has no event worth subscribing to here; every change we cause
  *  re-renders this component anyway. */
@@ -77,29 +80,27 @@ export function PushPrompt({ next }: { next: string }) {
   const blocked = state === "denied" || outcome === "denied"
 
   return (
-    <div className="flex w-full max-w-xs flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-xl font-semibold">
-          {done ? "Notifications are on" : "Get a nudge when it matters"}
-        </h1>
-        <p className="text-sm opacity-70">
-          {done
+    <div className="flex w-full flex-col gap-4">
+      <OnboardingHeading
+        title={done ? "Notifications are on" : "Get a nudge when it matters"}
+        lede={
+          done
             ? "We'll let you know when your Circle is waiting on you. You can turn this off in settings."
-            : "One notification a day, at most: how your Circle did, and whether anyone is waiting on you. Nothing else."}
-        </p>
-      </div>
+            : "One notification a day, at most: how your Circle did, and whether anyone is waiting on you. Nothing else."
+        }
+      />
 
       {blocked ? <PushDenied /> : null}
 
       {state === "unsupported" ? (
-        <p className="text-sm opacity-80">
+        <p className="ds-text-primary">
           This browser can&apos;t send notifications. On an iPhone, add Solarity
           to your home screen first, then open it from there.
         </p>
       ) : null}
 
       {outcome === "dismissed" ? (
-        <p className="text-sm opacity-80">
+        <p className="ds-text-primary">
           No answer given, so nothing has changed. You can try again here or from
           settings later.
         </p>
@@ -108,32 +109,38 @@ export function PushPrompt({ next }: { next: string }) {
       {outcome === "failed" && error ? (
         // The only branch that is actually an error, and it says what happened
         // rather than "something went wrong".
-        <p role="alert" className="text-sm text-red-600">
-          {error}
-        </p>
+        <FormError>{error}</FormError>
       ) : null}
 
       {!done && !blocked && state !== "unsupported" ? (
-        <button
-          type="button"
+        <PrimaryButton
           onClick={ask}
           disabled={asking || state === "unknown"}
-          className="rounded border px-4 py-2 text-sm font-medium disabled:opacity-50"
+          full
         >
           {asking ? "Waiting for your answer…" : "Turn on notifications"}
-        </button>
+        </PrimaryButton>
       ) : null}
 
-      <button
-        type="button"
-        onClick={() => router.push(next)}
-        className="rounded border px-4 py-2 text-sm font-medium"
-      >
-        {done ? "Continue" : "Not now"}
-      </button>
+      {/*
+        **"Continue" is primary, "Not now" is not.** Once permission is granted
+        this is the only control left and it is how you leave onboarding; while
+        the ask is still on screen it is the way *past* the ask, and a second
+        flame button beside "Turn on notifications" would make declining look
+        like the recommended choice.
+      */}
+      {done ? (
+        <PrimaryButton onClick={() => router.push(next)} full>
+          Continue
+        </PrimaryButton>
+      ) : (
+        <SecondaryButton onClick={() => router.push(next)} full>
+          Not now
+        </SecondaryButton>
+      )}
 
       {!done ? (
-        <p className="text-xs opacity-60">
+        <p className="ds-type-note ds-text-muted">
           You can turn notifications on later in settings.
         </p>
       ) : null}

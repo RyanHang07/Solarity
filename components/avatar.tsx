@@ -46,7 +46,13 @@ export function Avatar({
       <span
         aria-hidden
         style={{ width: size, height: size, fontSize: Math.round(size * 0.45) }}
-        className="flex shrink-0 items-center justify-center rounded-full border font-medium opacity-70"
+        /*
+          The initial fallback. `ds-border-oatmeal` rather than a bare `border`,
+          which fell through to `currentColor` and so changed shade with
+          whatever ink the row around it happened to set — a roster row and a
+          muted digest line drew visibly different circles for the same person.
+        */
+        className="ds-border-oatmeal ds-text-muted flex shrink-0 items-center justify-center rounded-full border font-medium"
       >
         {initial}
       </span>

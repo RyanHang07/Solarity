@@ -39,9 +39,36 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#0b0b12",
-    theme_color: "#0b0b12",
+    /**
+     * **`--ds-abyss`, and it used to be `#0b0b12`, which is in no palette.**
+     *
+     * That value predates the design system and nothing ever reconciled it. It
+     * reads as near-black with a violet cast; the abyss is blue-grey. The
+     * difference is invisible side by side in a diff and obvious on a phone,
+     * because these two are the *first* thing an installed app shows: Android
+     * paints `background_color` for the whole splash before a single pixel of
+     * the app renders, and `theme_color` sits behind the status bar for as long
+     * as the app is open.
+     *
+     * So a launch went violet-black, then blue-grey, every time. Copied rather
+     * than imported for the reason the icons are: a manifest is JSON at the
+     * edge of the app and no CSS variable reaches it.
+     */
+    background_color: "#0f1620",
+    theme_color: "#0f1620",
     icons: [
+      {
+        /**
+         * **Listed first and without `sizes`, on purpose.** A browser that
+         * understands SVG takes this and is done at any density; one that does
+         * not skips an unknown type and falls through to the PNGs below. That
+         * ordering is the whole mechanism — `sizes: "any"` on an SVG is what
+         * makes some Android versions rasterise it once at the wrong density.
+         */
+        src: "/icons/icon.svg",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
       {
         src: "/icons/icon-192.png",
         sizes: "192x192",
@@ -56,6 +83,8 @@ export default function manifest(): MetadataRoute.Manifest {
       },
       {
         // Artwork sits inside the centre 80% so Android can crop to any shape.
+        // Drawn at scale(3.2) where the others use scale(4) — see
+        // `public/icons/icon-maskable.svg`.
         src: "/icons/icon-512-maskable.png",
         sizes: "512x512",
         type: "image/png",

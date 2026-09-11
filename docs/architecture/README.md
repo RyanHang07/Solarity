@@ -9,7 +9,7 @@ Friends in invite-only Circles see each other's daily progress. The database enf
 | [`time-and-streaks.md`](time-and-streaks.md) | Check-in dates, the 2 AM boundary, rollover, streaks, digests, scheduled jobs |
 | [`app.md`](app.md) | Premise, stack, route and directory structure, Circles and invites, PWA and push, environment |
 
-Sibling documents: `../build-plan.md` (what is left), `../patterns.md` (the forty-nine bug shapes), `../testing.md` (how to run and verify), `../history.md` (why past decisions went that way).
+Sibling documents: `../build-plan.md` (what is left), `../design-system.md` (tokens and the standing design checks), `../patterns.md` (the fifty-one bug shapes), `../testing.md` (how to run and verify), `../v1/` (what shipped in v1), `../history.md` (why past decisions went that way).
 
 ---
 
@@ -23,9 +23,11 @@ Sibling documents: `../build-plan.md` (what is left), `../patterns.md` (the fort
 
 **And since then**: inviting a *person* by username rather than handing out a link (step 18); four intraday notification types with per-type switches (step 19); the front door — email and password, terms acceptance, a landing page and `/support` (step 20); and **the galaxy** on both surfaces, with a first goal and a sun colour chosen during onboarding (steps 21 to 27, plus migrations 110 to 112).
 
-**112 migrations, and v1 functionality is complete.** The database is the source of truth for every rule: caps, dates, visibility, streaks, who may moderate, and who hears about what. The app cannot bypass one by mistake, because RLS and grants are checked before any query it writes.
+**And since then**: the design port moved all nine tranches onto the design system, and migration 113 made `export_user_data` `security definer` after an audit found it had never once run.
 
-**What is left is the design pass**, and nothing blocks it. The whole manual pass is run — thirty rows plus twelve re-checks, on a real phone, finding eight defects no headless test could reach.
+**113 migrations, and v1 is complete.** The database is the source of truth for every rule: caps, dates, visibility, streaks, who may moderate, and who hears about what. The app cannot bypass one by mistake, because RLS and grants are checked before any query it writes.
+
+**The design pass is done**, and the record is in `../v1/`. The whole manual pass is run — thirty rows plus twelve re-checks, on a real phone, finding eight defects no headless test could reach. What is open is in `../build-plan.md`, and none of it is functionality.
 
 ---
 
@@ -40,7 +42,7 @@ These hold everywhere. Breaking one is a bug even if nothing fails.
 | Goal titles and notes reach only their owner, unless shared | `goals`/`progress_entries` scoped to `user_id = auth.uid()`; `circle_roster` is the only cross-member reader |
 | Masking never applies to yourself | `is_self` exemptions in `circle_roster` and `can_view_checkin_photo` |
 | Hiding conceals the title, never the commitment | Hidden goals still count in `total_count` and `daily_completion` |
-| Every refusal carries a `HINT`, and the app branches on that | **33 raised by the deployed database, 33 resolved in `lib/errors.ts` — verified against `pg_proc` rather than against the migrations, and still 33 on 4 September after migrations 110 to 112** |
+| Every refusal carries a `HINT`, and the app branches on that | **33 raised by the deployed database, 33 resolved in `lib/errors.ts` — verified against `pg_proc` rather than against the migrations. Re-counted 11 September after migration 113: still 33 both sides** |
 | A notification naming a Circle carries `group_id` **and** `circle_name` | `notifications_payload_names_its_circle` |
 | Grants are checked **before** RLS | So no policy rescues a missing grant, and a new column needs one deliberately |
 | An admin can read only what was **reported**, never a person's account | `admin_report_detail` returns one item, chosen by a third party. `users.role` is in no client grant at all |

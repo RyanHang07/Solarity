@@ -44,21 +44,16 @@ const HELP = [
 export function PushDenied() {
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm opacity-80">
+      <p className="ds-text-primary">
         Your browser is blocking notifications for Solarity. We can&apos;t ask
         again from here: that switch lives in your browser&apos;s settings, under
         this site&apos;s permissions.
       </p>
 
-      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+      <ul className="ds-type-note flex flex-wrap gap-x-4 gap-y-1">
         {HELP.map(({ name, href }) => (
           <li key={name}>
-            <a
-              href={href}
-              target="_blank"
-              rel="noreferrer"
-              className="underline opacity-70"
-            >
+            <a href={href} target="_blank" rel="noreferrer" className="ds-link">
               How to do it in {name}
             </a>
           </li>

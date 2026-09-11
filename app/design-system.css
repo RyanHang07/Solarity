@@ -1,0 +1,1455 @@
+/* Solarity redesign tokens — dark-only landing lab */
+
+/* ------------------------------------------------------------------ *
+ * The palette, re-spaced on measured contrast rather than on taste.
+ *
+ * ## What was wrong, in numbers
+ *
+ * | Pair | Was | Now |
+ * |---|---|---|
+ * | abyss vs surface — two adjacent fills | **1.34:1** | 1.94:1 |
+ * | palladian vs oatmeal — two lights | **1.48:1** | 2.05:1 |
+ * | flame vs oatmeal — accent vs muted | **1.00:1** | 1.32:1 |
+ *
+ * The third row is the one worth staring at. **Flame and oatmeal had exactly
+ * the same luminance**, so the accent colour had no brightness advantage over
+ * muted body text at all — it separated on hue alone, which is the one channel
+ * that fails on a dim phone, in sunlight, and for the ~8% of men with a colour
+ * deficiency. An accent that cannot out-shout a caption is not an accent.
+ *
+ * And 1.34:1 between the page and its "elevated" surface is why the proof band
+ * never read as a change of pressure: it was a different colour, not a
+ * different plane.
+ *
+ * ## What it cost, stated rather than hidden
+ *
+ * **Muted text on the surface fill drops from 6.38:1 to 3.96:1**, under the
+ * 4.5:1 that small text wants. That is a real regression and the fix is a usage
+ * rule rather than another colour: *muted is for the abyss, not for the
+ * surface.* Primary on surface is 8.11:1 and reads perfectly well; the surface
+ * band is a moment of emphasis, and emphasis does not want a whisper on it.
+ * ------------------------------------------------------------------ */
+:root {
+  /* Lifted, so primary text gains contrast on every dark fill. */
+  --ds-palladian: #f2eee6;
+  /* Dropped, so it is unmistakably below palladian and below flame. */
+  --ds-oatmeal: #b3a794;
+  /* Raised and slightly more saturated, so it reads as a *plane*. */
+  --ds-blue-fantastic: #34485f;
+  /* Unchanged. It is the brand, and it now sits above muted where it belongs. */
+  --ds-burning-flame: #ffb162;
+  /* Deepened, which also pulls it away from flame. */
+  --ds-truffle: #96422c;
+  /* Deepened and neutralised — the canvas everything else is measured from. */
+  --ds-abyss: #0f1620;
+  /*
+    **One declaration per face.** The body and mono stacks used to be written
+    out at each use; with the type scale added that would have been eight
+    copies of the same fallback chain, and a face swap would mean finding all
+    eight.
+  */
+  /*
+    **The error colour, and it exists because the chrome pass found it
+    missing.**
+
+    Five mocks reach for Tailwind's `text-red-600` for a validation message or
+    a destructive action. On the abyss that measures **3.76:1** — under the 4.5
+    an error message needs, and an error message is the one string on a screen
+    that must never be the hard one to read. It had no token, so nothing
+    caught it.
+
+    Hue 352 rather than a warmer red near truffle's 12. A danger colour whose
+    only job is to not be mistaken for the accent cannot sit 20 degrees from
+    flame; this is 322 away, and 7.51:1 on the abyss.
+  */
+  --ds-alarm: #ff7f8f;
+  --font-ds-display: var(--font-fraunces), "Times New Roman", serif;
+  --font-ds-body: var(--font-geist-sans), system-ui, sans-serif;
+  --font-ds-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+.ds-bg-abyss {
+  background-color: var(--ds-abyss);
+}
+
+.ds-bg-surface {
+  background-color: var(--ds-blue-fantastic);
+}
+
+.ds-bg-flame {
+  background-color: var(--ds-burning-flame);
+}
+
+.ds-bg-truffle {
+  background-color: var(--ds-truffle);
+}
+
+.ds-bg-palladian {
+  background-color: var(--ds-palladian);
+}
+
+.ds-bg-oatmeal {
+  background-color: var(--ds-oatmeal);
+}
+
+.ds-text-primary {
+  color: var(--ds-palladian);
+}
+
+.ds-text-muted {
+  color: var(--ds-oatmeal);
+}
+
+.ds-text-flame {
+  color: var(--ds-burning-flame);
+}
+
+/*
+  **The one red border in the app, and it is saved for one screen.**
+
+  Everywhere else the system draws regions with corners and hairlines — which
+  is not only a style preference, it is what makes a real border mean
+  something when it finally shows up. The delete-account confirmation is the
+  place it was being saved for: the only box in Solarity you cannot back out
+  of once you finish with it.
+
+  Used with `ds-panel`, which supplies the width and radius.
+*/
+.ds-border-danger {
+  border-color: var(--ds-alarm);
+}
+
+.ds-text-danger {
+  color: var(--ds-alarm);
+}
+
+.ds-text-on-light {
+  color: var(--ds-abyss);
+}
+
+.ds-border-oatmeal {
+  border-color: color-mix(in srgb, var(--ds-oatmeal) 45%, transparent);
+}
+
+.ds-font-display {
+  font-family: var(--font-ds-display);
+  font-optical-sizing: auto;
+}
+
+.ds-font-body {
+  font-family: var(--font-ds-body);
+}
+
+.ds-font-mono {
+  font-family: var(--font-ds-mono);
+}
+
+.ds-hero {
+  position: relative;
+  isolation: isolate;
+  min-height: min(100dvh, 920px);
+  overflow: hidden;
+}
+
+.ds-glow {
+  pointer-events: none;
+  position: absolute;
+  inset: auto auto -20% -15%;
+  width: min(90vw, 720px);
+  height: min(90vw, 720px);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at center,
+    color-mix(in srgb, var(--ds-burning-flame) 42%, transparent) 0%,
+    color-mix(in srgb, var(--ds-truffle) 18%, transparent) 38%,
+    transparent 70%
+  );
+  filter: blur(8px);
+  z-index: -1;
+}
+
+/*
+  **`ds-panel` carries its own border colour now.**
+
+  It used to set `border-style` and `border-width` and stop, which meant an
+  element with `ds-panel` and no `ds-border-oatmeal` fell through to
+  `currentColor` — a panel framed in whatever the text happened to be, and no
+  error anywhere to say so. Two tokens for one idea, where forgetting the
+  second still rendered.
+
+  `ds-border-oatmeal` stays, because a border colour is worth having on its own
+  (a divider, one edge of a row); it just is not load-bearing here any more.
+*/
+.ds-panel {
+  border-radius: 2px;
+  border-style: solid;
+  border-width: 1px;
+}
+
+/*
+  **The panel's own border colour, at zero specificity — the same trap
+  `ds-link` was in.**
+
+  `.ds-panel` is declared *below* the border tokens, so at equal specificity it
+  won: `ds-panel ds-border-danger` would have drawn an oatmeal box, exactly as
+  `ds-link ds-text-danger` drew oatmeal text. Found by writing the second
+  instance rather than by the first one being fixed, which is the argument for
+  the rule now recorded in `gap-audit.md` — any token that sets a colour and is
+  routinely combined with another that sets the same colour needs one of them
+  in `:where()`.
+*/
+:where(.ds-panel) {
+  border-color: color-mix(in srgb, var(--ds-oatmeal) 45%, transparent);
+}
+
+/* ------------------------------------------------------------------ *
+ * Three classes the page flow needs, added rather than improvised.
+ *
+ * Each was a one-off Tailwind string repeated in four places before it was
+ * named. That is the phase-2 rule working: a class earns its place by
+ * appearing more than twice, and the closed token set is what makes the
+ * inspector able to say so.
+ * ------------------------------------------------------------------ */
+
+/**
+ * The small mono label above a heading.
+ *
+ * **The one piece of pure brand voice in the system.** It carries the section
+ * index, it is the only place letter-spacing goes this wide, and it is what
+ * makes a page of otherwise ordinary headings read as one document.
+ */
+/* ══════════════════════════════════════════════════════════════════
+ * The app type scale.
+ *
+ * ## Derived, not chosen
+ *
+ * Every text-size and weight across the 31 route mocks was clustered by the
+ * role it plays rather than the value it holds. 278 elements collapsed into
+ * twelve signatures, and the twelve collapse into six roles. That is the
+ * scale — no ratio was picked in advance, because a ratio picked in advance
+ * produces steps nothing on the screens actually needs and omits the ones
+ * they do.
+ *
+ * ## The largest finding was not a token
+ *
+ * `text-sm` appeared 131 times in all 31 files. A value that universal is not
+ * a step in a scale, it is the **base** — so `ds-app` sets it once and those
+ * 131 uses delete rather than convert. Naming it `ds-type-body` would have
+ * preserved the repetition under a nicer name.
+ *
+ * ## Why `ds-type-*` and not `ds-text-*`
+ *
+ * `ds-text-primary`, `-muted`, `-flame`, `-on-light` are *colours*, and
+ * `ds-font-display|body|mono` are *families*. Size and weight are a third
+ * axis and need a third prefix, or `ds-text-note` reads as an ink.
+ * ══════════════════════════════════════════════════════════════════ */
+
+/*
+  **The base every app screen inherits.** 14px, because that is what the
+  screens already are — the app is dense and reads at arm's length, where the
+  landing page is prose read once at 16px+. Scoped to `ds-app` rather than set
+  on `:root` for exactly that reason: the two contexts genuinely disagree.
+*/
+.ds-app {
+  font-family: var(--font-ds-body);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  /*
+    **The surface and the ink come with the base, not per screen.**
+
+    Every mock previously rendered on the catalog's own background, so 31
+    screens each had to remember to set a colour or inherit the wrong one.
+    Putting it here means a screen added tomorrow is on the palette before
+    anyone styles it — and it is the same abyss the landing sits on, so the
+    seam between marketing and app is a route change and nothing else.
+  */
+  background-color: var(--ds-abyss);
+  color: var(--ds-palladian);
+}
+
+/* 45 uses across 22 files: timestamps, helper text under a field, footers. */
+.ds-type-note {
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+/*
+  32 uses, 23 of them on buttons. **Medium, not semibold**: a control label is
+  read as a target, not as a heading, and semibold at 14px next to 14px body
+  makes every button look like a section title.
+*/
+.ds-type-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/*
+  The screen's `<h1>`. 24 uses at `text-xl` and 3 at `text-2xl` — the same
+  role, written two ways, which is precisely the inconsistency between
+  siblings a token exists to end. 20px wins on count and because 24px on a
+  390px column crowds the header it sits in.
+*/
+.ds-type-title {
+  font-family: var(--font-ds-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+/*
+  A section `<h2>` inside a screen. 13 uses with a size, 8 with weight alone
+  in one file that forgot it — folded together here.
+*/
+.ds-type-heading {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+}
+
+/*
+  A streak count, a member tally, a number that changes.
+
+  **`tabular-nums` is the whole point.** 4 → 5 must not shift the glyphs
+  around it, and every one of the six existing uses had already discovered
+  this independently. Baking it in means the seventh cannot forget.
+*/
+.ds-type-metric {
+  font-family: var(--font-ds-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+}
+
+.ds-eyebrow {
+  font-family: var(--font-ds-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ds-burning-flame);
+}
+
+/**
+ * A hairline, and the structural motif of the whole page.
+ *
+ * **It is an orbit seen edge-on**, which is why it is a rule rather than a
+ * border on a box: the scene draws circles, the layout draws the same circles
+ * flattened. Boxes would be a different idea competing with the hero.
+ */
+.ds-rule {
+  border: 0;
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ds-oatmeal) 34%, transparent) 0%,
+    color-mix(in srgb, var(--ds-oatmeal) 10%, transparent) 55%,
+    transparent 100%
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Edge and corner accents.
+ *
+ * **The brand's second shape.** The scene draws circles; `ds-rule` is one seen
+ * edge-on. These are the third view: the *marks around* a circle — registration
+ * crosses, measure ticks, the brackets on an instrument bezel. Together they
+ * give the system something to say at an edge without resorting to a border,
+ * which is the move that turned the first landing page into a card grid.
+ *
+ * **Composed, not configured.** Each is one small span you place, so a corner
+ * can be on a section, a figure, a panel or nothing at all. A single
+ * `.ds-frame--bracketed` class that drew all four would be less code and would
+ * make three-quarters of its uses wrong.
+ * ------------------------------------------------------------------ */
+
+/**
+ * An L-shaped bracket for one corner.
+ *
+ * `data-corner` picks which. Rotation rather than four rule sets: the mark is
+ * the same mark, and stating that once means a change to its weight or length
+ * cannot apply to three corners and miss the fourth.
+ */
+/**
+ * **The gutter, and it is the one measurement the whole layout shares.**
+ *
+ * The page has two kinds of edge and they are not interchangeable:
+ *
+ * | Kind | Sits at | Example |
+ * |---|---|---|
+ * | **Tight** | the true edge of its box | a full-bleed band's own boundary |
+ * | **Inset** | the text column's margin | the ticks under the hero |
+ *
+ * Everything that reads as *part of the writing* — rules, ticks, corner marks
+ * around a block of copy — belongs on the inset line, because it is measuring
+ * the same column the words are set in. A mark at the true edge belongs to the
+ * viewport instead, and mixing the two is what made the corners on the proof
+ * band look stuck to the browser rather than drawn around the number.
+ *
+ * One variable, matching `px-8 lg:px-16` in the layout, so the two cannot drift.
+ */
+/**
+ * **Set by the component, not by a media query, and that is not a stylistic
+ * preference.**
+ *
+ * The mobile preview is a 390px `DeviceFrame` sitting inside a desktop window,
+ * so `@media (max-width: …)` asks the wrong question: the *window* is wide
+ * while the *layout* is narrow. The first version used a breakpoint here and
+ * the corners on the proof band landed 4rem in on a 390px column padded to
+ * 1.5rem — the mark and the text it was measuring disagreed by more than the
+ * margin itself.
+ *
+ * `LandingContent` writes this inline from its `compact` prop, which is the
+ * same prop that chooses `px-6` over `px-8 lg:px-16`. One source, so the mark
+ * and the margin cannot drift.
+ */
+:root {
+  --ds-gutter: 2rem;
+}
+
+/**
+ * The desktop step, matching `lg:px-16`.
+ *
+ * **Safe as a media query where the mobile one was not**, and the asymmetry is
+ * the point: the full-width layout is only ever rendered at window width, so
+ * here the window *is* the layout. The compact layout is the one that can be
+ * narrow inside a wide window, and it overrides this inline — an inline style
+ * beats a media query, so the narrow case always wins wherever it is drawn.
+ */
+@media (min-width: 1024px) {
+  :root {
+    --ds-gutter: 4rem;
+  }
+}
+
+.ds-corner {
+  --ds-corner-size: 14px;
+  --ds-corner-weight: 1px;
+  /** Tight by default; `data-inset` moves it onto the gutter line. */
+  --ds-corner-inset: 0px;
+  pointer-events: none;
+  position: absolute;
+  width: var(--ds-corner-size);
+  height: var(--ds-corner-size);
+  border-top: var(--ds-corner-weight) solid
+    color-mix(in srgb, var(--ds-oatmeal) 50%, transparent);
+  border-left: var(--ds-corner-weight) solid
+    color-mix(in srgb, var(--ds-oatmeal) 50%, transparent);
+}
+
+.ds-corner[data-inset] {
+  --ds-corner-inset: var(--ds-gutter);
+}
+
+.ds-corner[data-corner="tl"] {
+  top: var(--ds-corner-inset);
+  left: var(--ds-corner-inset);
+}
+.ds-corner[data-corner="tr"] {
+  top: var(--ds-corner-inset);
+  right: var(--ds-corner-inset);
+  transform: rotate(90deg);
+}
+.ds-corner[data-corner="br"] {
+  bottom: var(--ds-corner-inset);
+  right: var(--ds-corner-inset);
+  transform: rotate(180deg);
+}
+.ds-corner[data-corner="bl"] {
+  bottom: var(--ds-corner-inset);
+  left: var(--ds-corner-inset);
+  transform: rotate(270deg);
+}
+
+/** The accent corner, for the one mark on a section that should carry heat. */
+.ds-corner[data-accent="flame"] {
+  border-top-color: color-mix(in srgb, var(--ds-burning-flame) 85%, transparent);
+  border-left-color: color-mix(in srgb, var(--ds-burning-flame) 85%, transparent);
+}
+
+/**
+ * A measure tick, and the row it lives in.
+ *
+ * **This is the orbit's dots, flattened.** The scene draws each path as points
+ * rather than a line, so a ruled edge made of repeating marks is the same
+ * gesture in two dimensions — which is why it reads as belonging here and a
+ * dashed border would not.
+ *
+ * `repeating-linear-gradient` rather than n spans: one element, one paint, and
+ * the spacing stays even at any width without JavaScript measuring anything.
+ */
+.ds-ticks {
+  pointer-events: none;
+  height: 6px;
+  width: 100%;
+  background-image: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ds-oatmeal) 42%, transparent) 0 1px,
+    transparent 1px 9px
+  );
+  /* Fades out rather than stopping, so it reads as continuing past the edge
+     — the same reason the orbit paths leave the frame. */
+  mask-image: linear-gradient(90deg, #000 0%, #000 55%, transparent 100%);
+}
+
+/*
+  **Which end dissolves is a statement about where the line comes from.**
+
+  The default is solid at the start and gone at the end: an edge anchored to
+  the left margin, continuing off the right. A rule that *arrives* at
+  something — the header rule running into the nav — has to be the reverse, or
+  it fades out exactly where it is meant to make contact and reads as a
+  smudge. `both` is for a rule that belongs to neither side.
+*/
+.ds-ticks[data-fade="start"] {
+  mask-image: linear-gradient(90deg, transparent 0%, #000 45%, #000 100%);
+}
+.ds-ticks[data-fade="both"] {
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000 28%,
+    #000 72%,
+    transparent 100%
+  );
+}
+
+.ds-ticks[data-direction="vertical"] {
+  height: 100%;
+  width: 6px;
+  background-image: repeating-linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ds-oatmeal) 42%, transparent) 0 1px,
+    transparent 1px 9px
+  );
+  mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+}
+
+/**
+ * The bracketed divider's frame and ring — see `BracketedRule` in `marks.tsx`.
+ *
+ * A hairline box rather than `ds-panel`, because this is a *typographic* mark:
+ * it sits in the flow like an asterism, and a panel's border weight would make
+ * it a container with three things inside instead of one mark.
+ */
+.ds-bracket {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.5rem 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--ds-palladian) 70%, transparent);
+  color: var(--ds-burning-flame);
+}
+
+/**
+ * A pressable phase mark.
+ *
+ * **No border, no fill, no hover background** — the mark *is* the control, and
+ * a chip around it would put a rectangle back on a page that spent three
+ * revisions removing them. Hover lifts the whole glyph slightly; focus draws
+ * the one ring the system uses everywhere else.
+ */
+.ds-phase {
+  display: inline-flex;
+  cursor: pointer;
+  border: 0;
+  background: none;
+  padding: 0;
+  line-height: 0;
+  transition:
+    transform 180ms ease,
+    filter 180ms ease;
+}
+
+button.ds-phase:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.12);
+}
+
+button.ds-phase:active {
+  transform: translateY(0) scale(0.96);
+}
+
+button.ds-phase:focus-visible {
+  outline: 2px solid var(--ds-burning-flame);
+  outline-offset: 4px;
+  border-radius: 50%;
+}
+
+.ds-bracket-ring {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ds-palladian);
+}
+
+/**
+ * `OrbitCorner`'s placement, matching `ds-corner` exactly so the two are
+ * interchangeable at a call site. The arc is drawn open toward its corner, so
+ * only translation differs — no rotation, unlike the bracket.
+ */
+.ds-orbit-corner {
+  --ds-corner-inset: 0px;
+  pointer-events: none;
+  position: absolute;
+}
+.ds-orbit-corner[data-inset] {
+  --ds-corner-inset: var(--ds-gutter);
+}
+.ds-orbit-corner[data-corner="tl"] {
+  top: var(--ds-corner-inset);
+  left: var(--ds-corner-inset);
+}
+.ds-orbit-corner[data-corner="tr"] {
+  top: var(--ds-corner-inset);
+  right: var(--ds-corner-inset);
+  transform: scaleX(-1);
+}
+.ds-orbit-corner[data-corner="br"] {
+  bottom: var(--ds-corner-inset);
+  right: var(--ds-corner-inset);
+  transform: scale(-1);
+}
+.ds-orbit-corner[data-corner="bl"] {
+  bottom: var(--ds-corner-inset);
+  left: var(--ds-corner-inset);
+  transform: scaleY(-1);
+}
+
+/* ------------------------------------------------------------------ *
+ * The horizon — a slow warm gradient that closes the page.
+ *
+ * **Left cold, right hot, and it drifts.** Abyss through truffle to flame and
+ * on to a yellow the palette does not otherwise contain, so the footer reads as
+ * the far edge of the same sky the hero opens on. The page begins near a star
+ * and ends at a sunrise.
+ *
+ * ## Why it moves the way it does
+ *
+ * `background-position` on an over-wide gradient, not `background-image`
+ * interpolation and not a canvas. Position is a compositor-thread property, so
+ * the animation costs no layout, no paint and no main-thread work at all — it
+ * survives a busy page, which a JS-driven gradient does not.
+ *
+ * **Eighteen seconds and 6% of travel.** Slow enough that nobody catches it
+ * moving, which is the difference between atmosphere and a distraction. If you
+ * can see it animate, it is too fast.
+ *
+ * `mask-image` fades the top edge out so the band has no seam against the page
+ * — the same reason `ds-ticks` fades rather than stopping.
+ * ------------------------------------------------------------------ */
+.ds-horizon {
+  pointer-events: none;
+  position: absolute;
+  inset: auto 0 0 0;
+  height: clamp(150px, 24vh, 280px);
+
+  /**
+   * **Stronger than the first attempt, which read as a smudge.**
+   *
+   * Every stop was under 50% alpha, so on a near-black page the whole band was
+   * a faint brown wash that looked like a rendering artefact rather than a
+   * decision. The ramp now reaches full opacity at the hot end and starts
+   * later, so most of the width is genuinely dark and the heat is concentrated
+   * where the eye ends its travel.
+   */
+  background-image: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 28%,
+    color-mix(in srgb, var(--ds-truffle) 55%, transparent) 52%,
+    color-mix(in srgb, var(--ds-burning-flame) 82%, transparent) 78%,
+    #ffd98a 93%,
+    #fff0c4 100%
+  );
+  background-size: 118% 100%;
+  background-position: 0% 0%;
+  mask-image: linear-gradient(to top, #000 0%, #000 30%, transparent 100%);
+  animation: ds-horizon-drift 18s ease-in-out infinite alternate;
+}
+
+@keyframes ds-horizon-drift {
+  from {
+    background-position: 0% 0%;
+  }
+  to {
+    background-position: 100% 0%;
+  }
+}
+
+/**
+ * The tiled variant.
+ *
+ * **The same gradient, quantised into cells**, which reads as instrumentation
+ * rather than as weather — a readout of the day rather than a sunset. Built
+ * from a repeating mask over the identical background, so the two variants
+ * cannot drift apart in colour: there is one gradient and two ways to show it.
+ */
+.ds-horizon[data-tiled] {
+  /**
+   * ## Why the cells were different sizes
+   *
+   * The first version intersected two `repeating-linear-gradient` masks, one
+   * per axis. A repeating gradient has no fixed tile — the browser rasterises
+   * the *whole element* and rounds each colour stop to a device pixel
+   * independently, so at a fractional DPR, or on an element whose height comes
+   * from `clamp()`, some periods round to 9px and their neighbours to 10.
+   * Every cell was nominally identical and no two were.
+   *
+   * **A tile with an explicit `mask-size` cannot do that.** One 12×12 SVG
+   * holding a 9×9 square, repeated: the browser rounds the tile once and every
+   * repetition is a copy of it. Uniform by construction rather than by
+   * arithmetic that happens to agree.
+   *
+   * Two layers now instead of three — the fade and the grid — which also
+   * removes the `mask-composite` difference between Safari's prefixed
+   * `source-in` and the standard `intersect`.
+   */
+  --ds-tile: 12px;
+  mask-image:
+    linear-gradient(to top, #000 0%, #000 30%, transparent 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Crect width='9' height='9' x='1.5' y='1.5' fill='%23000'/%3E%3C/svg%3E");
+  mask-size:
+    100% 100%,
+    var(--ds-tile) var(--ds-tile);
+  mask-repeat: no-repeat, repeat;
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
+
+  /**
+   * **Three loops, no two of which share a period.**
+   *
+   * 18s drift, 13s pulse, 29s crawl. Any two durations with a common factor
+   * resynchronise on that factor and the whole band visibly ticks; these do
+   * not line up again for over an hour, which is longer than anyone looks.
+   *
+   * The crawl moves the *mask* rather than the background, so the tiles travel
+   * across a gradient that is itself drifting the other way — the cells appear
+   * to fill and empty as they cross the hot end. That is the animation doing
+   * something a plain opacity pulse cannot: it makes the grid read as a
+   * readout being written rather than a texture being lit.
+   */
+  animation:
+    ds-horizon-drift 18s ease-in-out infinite alternate,
+    ds-horizon-pulse 13s ease-in-out infinite,
+    ds-horizon-crawl 29s linear infinite;
+}
+
+@keyframes ds-horizon-pulse {
+  0%,
+  100% {
+    opacity: 0.78;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes ds-horizon-crawl {
+  from {
+    /* One tile, so the loop is seamless: the grid at 12px is the grid at 0. */
+    mask-position:
+      0 0,
+      0 0;
+  }
+  to {
+    mask-position:
+      0 0,
+      var(--ds-tile) calc(var(--ds-tile) * -1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The gradient stays; only the drift goes. It is a colour, not an effect. */
+  .ds-horizon,
+  .ds-horizon[data-tiled] {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/**
+ * The gradient that keeps type legible over the canvas.
+ *
+ * **Not a flat overlay, and that is the whole point.** A uniform scrim dims
+ * the artwork everywhere including where nothing is written; this is opaque
+ * where the words are and clear where the sun is, so the picture keeps its
+ * contrast and the copy still passes on a phone in daylight.
+ */
+.ds-scrim {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  /*
+    **Rolled back on desktop** so more of the system shows through. The copy
+    still needs a dark pocket on the left; it does not need the mid-frame to
+    stay half-abyss. Stops pull left and mid opacities drop so the sun and
+    outer planets read through earlier.
+  */
+  background:
+    linear-gradient(
+      100deg,
+      var(--ds-abyss) 0%,
+      color-mix(in srgb, var(--ds-abyss) 72%, transparent) 26%,
+      color-mix(in srgb, var(--ds-abyss) 18%, transparent) 48%,
+      transparent 72%
+    ),
+    linear-gradient(
+      to top,
+      var(--ds-abyss) 0%,
+      color-mix(in srgb, var(--ds-abyss) 32%, transparent) 18%,
+      transparent 48%
+    );
+}
+
+/**
+ * The stacked composition: sun above, copy below.
+ *
+ * **`[data-compact]`, not a breakpoint**, for the same reason `--ds-gutter` is
+ * set inline — the mobile preview is a narrow frame in a wide window, so a
+ * media query kept the *desktop* scrim on it. That put the left-to-right
+ * gradient's opaque wedge straight across the sun, which is the "weird shadow
+ * over part of it": a scrim shaped for copy on the left, applied to a layout
+ * with copy underneath.
+ */
+.ds-scrim[data-compact] {
+  background: linear-gradient(
+    to top,
+    var(--ds-abyss) 0%,
+    color-mix(in srgb, var(--ds-abyss) 88%, transparent) 38%,
+    color-mix(in srgb, var(--ds-abyss) 42%, transparent) 68%,
+    transparent 100%
+  );
+}
+
+/*
+  **A section leaving the screen, animated without knowing its height.**
+
+  When the last goal is checked in, the "waiting on you" panel stops being
+  true. Unmounting it is correct and doing it *instantly* is not: the thing
+  that changed is a consequence of the tap you just made, and a consequence
+  that appears fully-formed reads as a glitch rather than as cause and effect.
+
+  `grid-template-rows: 1fr -> 0fr` is what animates a height nobody can know in
+  advance — no measuring, no `ResizeObserver`, no JS at all. The child needs
+  `min-height: 0` and `overflow: hidden` or it refuses to be squeezed.
+
+  **Opacity leads and height follows.** 260ms against 420ms, so the panel
+  fades while it still has size and the space closes after it has gone. The
+  reverse — collapsing a still-solid panel — looks like the layout snapping
+  shut on something.
+*/
+.ds-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 260ms ease,
+    margin-bottom 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ds-collapse > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ds-collapse[data-collapsed] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  /*
+    The parent is a flex column with a gap, and a zero-height child still earns
+    one. Pulling the gap back as the row closes is what stops a 24px hole being
+    left behind — and it is animated too, or the hole would simply vanish at
+    the end instead of closing with everything else.
+  */
+  margin-bottom: calc(-1 * var(--ds-collapse-gap, 1.5rem));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-collapse {
+    transition: none;
+  }
+}
+
+/*
+  **The desktop navbar, and it is chrome rather than content.**
+
+  It used to be two rows — a wordmark bar with no background, then a section
+  row under it — which put three horizontal rules in the first 100px and made
+  the sections look like the page's first section rather than the app's
+  furniture.
+
+  One bar now, and it is *filled*. That is the whole distinction: everything
+  the page owns sits on the abyss, and the one thing the app owns does not. A
+  border alone could not say it, because the page is full of borders; a change
+  of plane is the one signal nothing else on the screen is using.
+
+  **This reverses an earlier decision on purpose.** The header's border was
+  removed to pay for a row of ticks beneath it, on the argument that stacked
+  rules read as a spreadsheet. That argument was right about *three* rules and
+  wrong about the fix: the answer was one bar with one solid edge, not a
+  softer version of the second one.
+*/
+.ds-navbar {
+  /*
+    **The full surface, and the first value was measured wrong.**
+
+    55% of it landed at 1.06 against `ds-card` — the bar and the panels would
+    have been the same plane, which is the one thing this must not be. Full
+    surface is 1.94 against the page and 1.31 against a card: distinct from
+    both, which is what "the app's furniture" has to be.
+
+    The cost is that oatmeal on it measures **3.96:1**, under the 4.5 a 14px
+    label needs — so the inactive links are `ds-text-primary` (8.11) rather
+    than muted. That is fine here and would not be elsewhere: the active state
+    is carried by flame *and* an underline, so inactive does not need to be
+    dim, it needs to be not-flame. The icons stay muted because a glyph is a
+    graphic and clears at 3:1.
+  */
+  background-color: var(--ds-blue-fantastic);
+  border-bottom: 1px solid color-mix(in srgb, var(--ds-oatmeal) 30%, transparent);
+}
+
+/*
+  The active section's underline, sitting *inside* the bar with air beneath it
+  rather than merging into the bar's own edge. Two lines touching read as one
+  thick line, and then nothing marks where you are.
+*/
+.ds-navbar-link {
+  position: relative;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.ds-navbar-link[aria-current="page"] {
+  border-bottom-color: currentColor;
+}
+
+/*
+  **The unread badge, and it is the one place `--ds-alarm` is not an error.**
+
+  A badge and an error message want the same thing from a colour — *deal with
+  this* — and the palette has exactly one that says it. Flame is already spent
+  on "where you are", and putting the badge in flame too would mean the active
+  tab and the waiting tab were the same colour, which is precisely the
+  distinction the badge exists to draw. Red against orange is a 322° hue gap,
+  so the two never blur into one another.
+
+  A dot, not a number, at the icon's shoulder. The count is in the accessible
+  name — "Notifications, 2 unread" — because a badge reading "12" invites you
+  to read it, and there is nothing to learn from the number that opening the
+  section does not tell you better.
+
+  The ring is the surface behind it, so the dot reads as sitting *on* the icon
+  rather than merging with a stroke it happens to overlap.
+*/
+.ds-badge {
+  position: absolute;
+  top: -1px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--ds-alarm);
+  box-shadow: 0 0 0 2px var(--ds-abyss);
+}
+
+/*
+  **A segmented switch between two readings of the same screen.**
+
+  Not tabs: tabs go somewhere, and the phone already has five of those glued to
+  the bottom. This stays on Overview and changes what it is *about* — your open
+  goals, or who is waiting on whom. Two answers to "how am I doing", and the
+  app's whole argument is that the second one is why the first one happens.
+
+  Recessed like a field, with the selected option raised out of it as a card.
+  That inversion is the entire affordance: the thing sitting proud is the thing
+  you are looking at, which needs no colour and survives being glanced at.
+*/
+.ds-segment {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 3px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--ds-oatmeal) 22%, transparent);
+  background-color: var(--ds-abyss);
+}
+
+/*
+  **Four options do not fit 375px, and the token was designed for two.**
+
+  `Mine | Circle` sizes itself to its content and always fits. Admin's
+  `Pending | Reviewed | Actioned | Dismissed` did not — "Dismissed" ran off the
+  right edge of the phone, and the control silently lost an option rather than
+  looking broken, which is worse.
+
+  Scrolling was the wrong fix. A filter has to show its whole set: if you
+  cannot see that "Dismissed" exists you cannot know the list you are looking
+  at is a subset. So `[data-fill]` spends the full width instead, with every
+  option an equal share and tighter padding — 4 x 76px plus the border fits the
+  343px a 375 screen leaves after gutters.
+*/
+.ds-segment[data-fill] {
+  display: flex;
+  width: 100%;
+}
+
+.ds-segment[data-fill] .ds-segment-option {
+  flex: 1;
+  min-width: 0;
+  padding-inline: 0.35rem;
+  font-size: 0.8125rem;
+  text-align: center;
+  /* If a label still cannot fit, it truncates rather than pushing its
+     neighbours off — the row stays intact and the tooltip carries the word. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-segment-option {
+  border: 0;
+  cursor: pointer;
+  border-radius: 3px;
+  background: none;
+  padding: 0.35rem 0.9rem;
+  font-family: var(--font-ds-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ds-oatmeal);
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.ds-segment-option[aria-selected="true"] {
+  background-color: color-mix(in srgb, var(--ds-blue-fantastic) 90%, transparent);
+  color: var(--ds-palladian);
+}
+
+.ds-segment-option:focus-visible {
+  outline: 2px solid var(--ds-burning-flame);
+  outline-offset: 2px;
+}
+
+/*
+  **The sun picker's swatches.**
+
+  The ring was `ring-offset-[var(--background)]` — the *catalog's* background
+  variable, not the app's, so the gap between a selected swatch and its ring
+  was whatever colour the page behind the mock happened to be. On the abyss it
+  simply vanished.
+
+  Flame ring, abyss offset, and the offset is what makes the ring read as
+  separate from the colour it is selecting rather than a rim on it. `aria` does
+  the work; the visual is the confirmation.
+*/
+.ds-swatch {
+  display: block;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.peer:checked ~ .ds-swatch,
+.ds-swatch[data-selected] {
+  box-shadow:
+    0 0 0 2px var(--ds-abyss),
+    0 0 0 4px var(--ds-burning-flame);
+}
+
+.peer:focus-visible ~ .ds-swatch {
+  outline: 2px solid var(--ds-burning-flame);
+  outline-offset: 4px;
+}
+
+/*
+  **The phone's tab bar, glued to the screen with content running under it.**
+
+  Two problems, one solution. A `position: fixed` bar resolves against the
+  browser viewport, so inside the 375px `DeviceFrame` preview it would fly to
+  the bottom of the desktop window — the mock would lie about the app. And a
+  plain sticky bar at the end of the column *occupies* layout, so content stops
+  above it rather than sliding beneath.
+
+  A **zero-height sticky wrapper** solves both: it takes no space in the flow,
+  it sticks inside whatever scroll container it is in (the phone frame here,
+  the real viewport in the app), and the bar absolutely positioned inside it
+  overlays the content. The scrolling column pays for it with bottom padding,
+  so the last row is reachable rather than parked under the bar forever.
+
+  Translucent and blurred, so the content passing underneath stays visible.
+  88% abyss keeps text on the bar at better than 13:1 against whatever scrolls
+  behind it.
+*/
+.ds-tabbar-slot {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  height: 0;
+}
+
+.ds-tabbar {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  display: flex;
+  border-top: 1px solid color-mix(in srgb, var(--ds-oatmeal) 22%, transparent);
+  background-color: color-mix(in srgb, var(--ds-abyss) 88%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/*
+  The height the scrolling column has to reserve. One variable, so the bar and
+  the padding under it cannot drift apart.
+*/
+:root {
+  --ds-tabbar-height: 3.25rem;
+  /*
+    **One height for a field and any button standing next to it.**
+
+    Save beside the username was `py-2.5` against a field padded `0.5rem`:
+    41.6px against 37.6px, so the row never quite lined up and it was not
+    obvious why. A shared variable is the only way two different elements agree
+    on a height without somebody re-deriving the arithmetic each time.
+  */
+  --ds-control-height: 2.375rem;
+}
+
+.ds-tabbar-pad {
+  padding-bottom: calc(
+    var(--ds-tabbar-height) + env(safe-area-inset-bottom, 0px) + 1rem
+  );
+}
+
+/*
+  **Checkboxes and radios: `accent-color`, and deliberately nothing else.**
+
+  The settings screen is a column of them and the system had none, so the mock
+  had been drawing the sections that use them not at all. The tempting move is
+  a custom control — hide the input, draw a div, wire `aria-checked`. That
+  buys a shape and costs the entire native contract: keyboard behaviour,
+  form participation, the OS's own focus ring, screen-reader announcement, and
+  on iOS the tick animation people already know.
+
+  `accent-color` recolours the native control and keeps all of it. One
+  declaration, flame, and the browser does the rest. `ds-check` is the smallest
+  token in the system and the one with the best ratio of effect to risk.
+*/
+.ds-check {
+  accent-color: var(--ds-burning-flame);
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  /*
+    Native controls draw themselves from the page's `color-scheme`. Without
+    this the unchecked box renders as a light control on a dark card — the same
+    class of bug the app's own `globals.css` comment warns about for
+    `<input type="date">`.
+  */
+  color-scheme: dark;
+}
+
+/*
+  **A form field is recessed, where a card is raised, and that is the whole
+  idea.**
+
+  Eleven inputs across the auth screens were `rounded border px-3 py-2` — the
+  same class string as a button, so a field and a control you press looked
+  identical. The one thing an input has to say before you touch it is *type
+  here*, and a surface that sits *below* its container says it without a label.
+
+  So the fill is the abyss on a card that is lifted off the abyss: the field
+  reads as a hole cut in the card. The border is a little stronger than the
+  card's own so the shape survives on a screen that is mostly one dark colour.
+*/
+.ds-field {
+  width: 100%;
+  min-height: var(--ds-control-height);
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--ds-oatmeal) 30%, transparent);
+  background-color: var(--ds-abyss);
+  color: var(--ds-palladian);
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-ds-body);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.ds-field::placeholder {
+  color: color-mix(in srgb, var(--ds-oatmeal) 70%, transparent);
+}
+
+/*
+  Flame, and on the *outside* of the border. An inner ring shifts the text by a
+  pixel when it appears; an outline does not participate in layout at all.
+*/
+.ds-field:focus-visible {
+  outline: 2px solid var(--ds-burning-flame);
+  outline-offset: 2px;
+}
+
+/*
+  A field waiting on something that is not the person — a captcha, an upload
+  slot. Dashed because the boundary is provisional: something will fill it.
+*/
+.ds-field[data-pending] {
+  border-style: dashed;
+  color: var(--ds-oatmeal);
+}
+
+/*
+  **The "or" between two ways to sign in.**
+
+  It was `h-px flex-1 bg-current` at 50% opacity on both sides — a rule made of
+  the text colour, so it dimmed and brightened with whatever ink it inherited.
+  This is the same ruled edge the rest of the system uses, mirrored so it fades
+  *into* the word from both sides rather than away from it.
+*/
+.ds-or {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ds-or::before,
+.ds-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background-color: color-mix(in srgb, var(--ds-oatmeal) 26%, transparent);
+}
+
+/*
+  **The content container, and why it is not `ds-panel` with a fill.**
+
+  `ds-panel` is a hairline box — a control, a chip, a thumbnail frame. A screen
+  needs something else: a region that holds a group of things and reads as
+  *raised off the abyss*, so a dense screen has structure before anything is
+  arranged inside it.
+
+  The lift is 26% blue fantastic rather than a lighter grey, because the
+  palette has no neutral between abyss and oatmeal and inventing one would put
+  a seventh colour in a six-colour system. Mixing the surface into the abyss
+  gives a step that is unmistakably the same family.
+
+  **65%, arrived at by measuring rather than by eye.** The first attempt at 26%
+  landed at 1.15:1 against the abyss — a step that exists in the stylesheet and
+  not on the screen. 65% is 1.48:1: unmistakably a plane, still far below the
+  1.94 the full surface band sits at, so a card never competes with the one
+  section that is meant to be a colour. Palladian on it is 10.6:1 and oatmeal
+  5.19:1, both comfortable.
+*/
+.ds-card {
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--ds-oatmeal) 20%, transparent);
+  background-color: color-mix(in srgb, var(--ds-blue-fantastic) 65%, transparent);
+}
+
+/*
+  **Short screens sit in the middle; long ones start at the top.**
+
+  A 404, an empty state and a three-line profile all clung to the top of the
+  viewport with the rest of the screen empty beneath them — which reads as
+  *truncated* rather than as *brief*. `justify-center` on a `min-height` column
+  centres content only while it fits, and behaves exactly like `flex-start` the
+  moment it does not, so a long list is untouched and nothing needs a
+  measurement or a breakpoint.
+
+  It is on the shell's scroll column rather than on individual screens, so a
+  screen added later gets it without knowing about it.
+*/
+.ds-centre-short {
+  justify-content: center;
+}
+
+/*
+  The column a screen's content is set in. Wide enough for a list, narrow
+  enough that a line of body text does not run past the ~75 characters reading
+  comfortably tops out at.
+*/
+.ds-container {
+  width: 100%;
+  max-width: 46rem;
+  margin-inline: auto;
+}
+
+/*
+  A button that has to line up with a field beside it. Padding gives way to the
+  shared height, and the flex centring keeps the label on the middle of it once
+  the padding is gone.
+*/
+.ds-cta[data-inline] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--ds-control-height);
+  padding-block: 0;
+}
+
+.ds-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  border-radius: 2px;
+  padding: 0.75rem 1.35rem;
+
+  /**
+   * **A floor, so a label change cannot resize the button.**
+   *
+   * Every action here swaps its text while working — "Sign in" becomes
+   * "Opening…", "Start a circle" becomes "Working…" — and a button that shrinks
+   * on press is the single most common way an otherwise finished interface
+   * feels unfinished. Worse on a row of them: one resizing reflows its
+   * neighbours, so pressing one control visibly moves another.
+   *
+   * `min-width` rather than a fixed width, because a genuinely long label
+   * should still fit; `nowrap`, because the failure this prevents in width has
+   * an equivalent in height, where a two-word label wraps to two lines and the
+   * button grows downward instead.
+   *
+   * Override per instance with `--ds-cta-min` where a button is genuinely tiny.
+   */
+  min-width: var(--ds-cta-min, 11rem);
+  white-space: nowrap;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition:
+    transform 180ms ease,
+    filter 180ms ease,
+    opacity 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.ds-cta:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(0.92);
+}
+
+.ds-cta:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+  filter: brightness(0.78);
+}
+
+.ds-cta:disabled,
+.ds-cta[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.45;
+  filter: grayscale(0.25) brightness(0.7);
+  transform: none;
+}
+
+.ds-cta:focus-visible {
+  outline: 2px solid var(--ds-burning-flame);
+  outline-offset: 3px;
+}
+
+/*
+  **Links are flame, and the colour is declared at zero specificity.**
+
+  Two changes in one, and the second is a bug fix.
+
+  **Flame**, because a link is the one thing on a screen that *does* something
+  when you touch it, and oatmeal made it indistinguishable from a muted
+  sentence. On a dark app the underline convention is not enough on its own —
+  half of these have no underline until hover.
+
+  **`:where()`**, because `.ds-link` is declared far below the ink tokens: same
+  specificity, later wins, so **`ds-link ds-text-danger` was rendering
+  oatmeal**. "Delete your account" — the single most consequential control in
+  the app — has been quietly *not red* this whole time, and the coverage check
+  never saw it because it tests that a class is present, not that it wins.
+
+  `:where(.ds-link)` has zero specificity, so any `ds-text-*` beside it wins by
+  construction. The interaction rules below keep normal specificity because
+  they change decoration and brightness rather than hue, which is what lets a
+  danger link stay red and still behave like a link.
+*/
+:where(.ds-link) {
+  color: var(--ds-oatmeal);
+}
+
+/*
+  **Scoped to `ds-app`, and the landing keeps oatmeal.**
+
+  "Across the app" turns out to be the exact right scope rather than a
+  shorthand. The landing hero's nav — How it works, Sign in — is `ds-link` too,
+  and it sits beside the flame Sign up button. Making those flame would turn
+  the whole header orange and leave nothing for the CTA to be, on the one
+  surface where a single call to action is the entire point.
+
+  `ds-app` is on every screen behind a sign-in and on none of the marketing
+  ones, so the boundary is already drawn and does not need a new prop. Both
+  rules are `:where()`, so an ink token still beats either.
+*/
+:where(.ds-app .ds-link) {
+  color: var(--ds-burning-flame);
+}
+
+.ds-link {
+  cursor: pointer;
+  text-underline-offset: 4px;
+  transition:
+    opacity 160ms ease,
+    filter 160ms ease;
+}
+
+.ds-link:hover {
+  text-decoration: underline;
+  filter: brightness(1.08);
+}
+
+.ds-link:active {
+  filter: brightness(0.88);
+}
+
+.ds-link:focus-visible {
+  outline: 2px solid var(--ds-burning-flame);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.ds-link[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.landing-preview-shell {
+  min-height: calc(100dvh - 4.5rem);
+}
+
+.landing-preview-mobile {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem 1rem 3rem;
+  background:
+    radial-gradient(
+      ellipse at 70% 20%,
+      color-mix(in srgb, var(--ds-burning-flame) 12%, transparent),
+      transparent 55%
+    ),
+    var(--ds-abyss);
+}
+
+.landing-preview-mobile .phone-frame {
+  border-color: color-mix(in srgb, var(--ds-oatmeal) 35%, transparent);
+  background: var(--ds-abyss);
+  color: var(--ds-palladian);
+}
+
+.landing-preview-mobile .phone-frame-scroll {
+  background: var(--ds-abyss);
+}

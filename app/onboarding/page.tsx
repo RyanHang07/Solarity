@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { OnboardingShell } from "@/components/onboarding/onboarding-shell"
 import { createClient } from "@/lib/supabase/server"
 import { OnboardingForm } from "./onboarding-form"
 
@@ -21,11 +22,20 @@ export default async function OnboardingPage() {
   if (profile?.username) redirect("/dashboard")
 
   return (
-    <main className="flex min-h-full flex-1 flex-col items-center justify-center gap-6 p-8">
-      <h1 className="text-xl font-semibold">
-        {profile?.display_name ? `Welcome, ${profile.display_name}` : "Welcome"}
-      </h1>
+    /*
+      **The heading keeps the word "Welcome" in both branches**, and that is not
+      only copy: `gates.spec.ts` asserts `heading /welcome/i` as its proof that
+      an account without a username lands here rather than looping through the
+      `(app)` gate. Renaming this to "Set up your account" would turn a routing
+      test red for a wording change.
+    */
+    <OnboardingShell
+      title={
+        profile?.display_name ? `Welcome, ${profile.display_name}` : "Welcome"
+      }
+      lede="Two things and you're in."
+    >
       <OnboardingForm />
-    </main>
+    </OnboardingShell>
   )
 }

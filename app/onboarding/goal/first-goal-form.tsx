@@ -5,6 +5,8 @@ import { useActionState, useEffect, useMemo, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { saveFirstGoal } from "@/app/actions/onboarding"
 import { GalaxyPreview } from "@/components/galaxy-preview"
+import { PrimaryButton } from "@/components/ui/button"
+import { Field, FormError, Select } from "@/components/ui/field"
 import { SUN_COLOR_PRESETS, sunPresetIdForMember } from "@/lib/galaxy/data"
 import { buildFirstGoalPreview } from "@/lib/galaxy/solarity/snapshots"
 import type { ActionResult } from "@/lib/errors"
@@ -12,13 +14,9 @@ import type { ActionResult } from "@/lib/errors"
 function Submit() {
   const { pending } = useFormStatus()
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="rounded border px-4 py-2 text-sm font-medium disabled:opacity-50"
-    >
+    <PrimaryButton type="submit" disabled={pending} full>
       {pending ? "Saving…" : "Continue"}
-    </button>
+    </PrimaryButton>
   )
 }
 
@@ -104,7 +102,7 @@ export function FirstGoalForm({
   }, [state, router])
 
   return (
-    <form action={action} className="flex w-full max-w-xs flex-col gap-3">
+    <form action={action} className="flex w-full flex-col gap-3">
       {/*
         **Above the fields, and it is the first thing on the screen for a
         reason.** Onboarding has been a form asking for text; this is the first
@@ -136,7 +134,7 @@ export function FirstGoalForm({
         two.
       */}
       <fieldset className="flex flex-col gap-2">
-        <legend className="text-sm font-medium">Your sun</legend>
+        <legend className="ds-type-label ds-text-muted">Your sun</legend>
         <div role="radiogroup" aria-label="Your sun" className="flex gap-2">
           {SUN_COLOR_PRESETS.map((preset) => (
             <label
@@ -175,29 +173,24 @@ export function FirstGoalForm({
         </div>
       </fieldset>
 
-      <p className="text-xs opacity-60">
+      <p className="ds-type-note ds-text-muted">
         {category
           ? "Your sun, and the planet this goal will be."
           : "Your sun. Pick a category below and it gets a planet."}
       </p>
 
-      <label htmlFor="title" className="text-sm font-medium">
-        Your goal
-      </label>
-      <input
+      <Field
+        label="Your goal"
         id="title"
         name="title"
         required
         maxLength={100}
         autoComplete="off"
         placeholder="Read for 20 minutes"
-        className="rounded border px-3 py-2 text-sm"
       />
 
-      <label htmlFor="category" className="text-sm font-medium">
-        Category
-      </label>
-      <select
+      <Select
+        label="Category"
         id="category"
         name="category"
         required
@@ -205,7 +198,6 @@ export function FirstGoalForm({
         onChange={(event) => {
           setCategory(event.target.value)
         }}
-        className="rounded border px-3 py-2 text-sm"
       >
         {/*
           **Not `disabled`, and `goals-panel.tsx` already carried the reason.**
@@ -228,7 +220,7 @@ export function FirstGoalForm({
             {category.name}
           </option>
         ))}
-      </select>
+      </Select>
       {/*
         The line that used to be here said "the category is the colour this
         goal gets in your galaxy". The picture above says it now, in the colour
@@ -240,11 +232,7 @@ export function FirstGoalForm({
         text is a thing tests wait on and find nothing in. See `patterns.md`,
         "a decoy that satisfies the wait".
       */}
-      {state && !state.ok ? (
-        <p role="alert" className="text-xs text-red-600">
-          {state.error}
-        </p>
-      ) : null}
+      {state && !state.ok ? <FormError>{state.error}</FormError> : null}
 
       <Submit />
     </form>

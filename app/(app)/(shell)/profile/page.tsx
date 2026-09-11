@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { profileByUsername } from "@/app/actions/profile"
 import { signedAvatarUrl } from "@/app/actions/settings"
+import { SettingsIcon } from "@/components/marks/marks"
 import { ProfileView } from "../profile-view"
 
 export const metadata = { title: "Profile — Solarity" }
@@ -52,9 +53,37 @@ export default async function OwnProfilePage() {
 
   return (
     <>
+      {/*
+        **The settings gear, and it is here because the app bar took it away.**
+        `md:hidden`.
+
+        The bar carries the cog on desktop and is hidden entirely on a phone —
+        so on mobile the only remaining route to Settings was the sentence
+        below, buried in a line about who can see your stats. That is reachable
+        rather than findable.
+
+        Profile is where it belongs anyway: the account this page is *about* is
+        where the account's settings live, and the bottom bar has five equal
+        tabs with no room for a sixth.
+
+        `md:hidden` rather than always-on, so desktop keeps exactly one link
+        named "Account settings" — two would be ambiguous to a screen reader
+        and to a test locator, which is the rule `sections.ts` already states.
+      */}
+      <div className="flex justify-end md:hidden">
+        <Link
+          href="/settings"
+          aria-label="Account settings"
+          title="Account settings"
+          className="ds-link"
+        >
+          <SettingsIcon size={22} />
+        </Link>
+      </div>
+
       <ProfileView profile={profile} avatarUrl={avatarUrl} />
 
-      <p className="text-sm opacity-70">
+      <p className="ds-text-muted">
         {/*
           The toggle lives in settings with every other preference, and this is
           the screen where someone thinks to look for it. A second copy of the

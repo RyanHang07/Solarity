@@ -26,29 +26,45 @@ export function PolicyPage({
   children: React.ReactNode
 }) {
   return (
-    <main className="mx-auto flex min-h-full w-full max-w-2xl flex-col gap-6 p-6">
+    /*
+      **`ds-app` on the wrapper, and these pages are why the class exists as a
+      class.** A policy page sits outside `(app)`, so it inherits none of the
+      shell's base — without this it would render at the root 16px on the abyss
+      set by `globals.css`, which is close enough to look intentional and wrong
+      enough that the type scale stops lining up with the rest of the product.
+    */
+    <main className="ds-app mx-auto flex min-h-full w-full max-w-2xl flex-col gap-6 p-6">
       <header className="flex flex-col gap-2">
-        <Link href="/" className="text-sm underline opacity-70">
+        {/*
+          `legal.spec.ts` clicks `link "Solarity"` here to get home, so the name
+          is fixed. It is a link rather than a wordmark: on a policy page the
+          way back is the useful thing, not the branding.
+        */}
+        <Link href="/" className="ds-link self-start">
           Solarity
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        <p className="text-sm opacity-70">{intro}</p>
+        <h1 className="ds-type-title ds-text-primary">{title}</h1>
+        <p className="ds-text-muted">{intro}</p>
         {/* A date, not a semver: nobody reading this cares about an ordinal,
             and the constant it comes from is what a future acceptance column
             will compare. */}
-        <p className="text-xs opacity-60">Last updated {formatVersion(version)}</p>
+        <p className="ds-type-note ds-text-muted">
+          Last updated {formatVersion(version)}
+        </p>
       </header>
 
       {/* `prose`-free on purpose: the app has no typography plugin, and one
           styled wrapper here would be a second styling system to maintain for
           two pages. */}
-      <div className="flex flex-col gap-6 text-sm leading-relaxed">{children}</div>
+      <div className="ds-text-primary flex flex-col gap-6 leading-relaxed">
+        {children}
+      </div>
 
-      <footer className="flex gap-4 border-t pt-4 text-sm opacity-70">
-        <Link href="/privacy" className="underline">
+      <footer className="ds-border-oatmeal flex flex-wrap items-center gap-4 border-t pt-4">
+        <Link href="/privacy" className="ds-link">
           Privacy
         </Link>
-        <Link href="/terms" className="underline">
+        <Link href="/terms" className="ds-link">
           Terms
         </Link>
       </footer>
@@ -66,7 +82,7 @@ export function PolicySection({
 }) {
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-base font-semibold">{heading}</h2>
+      <h2 className="ds-type-heading ds-text-primary">{heading}</h2>
       {children}
     </section>
   )

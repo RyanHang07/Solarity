@@ -166,7 +166,7 @@ export function PhotoButton({
       */}
       <label
         htmlFor={inputId}
-        className={`cursor-pointer text-xs underline ${busy ? "opacity-40" : "opacity-70"}`}
+        className={`ds-link ds-type-note cursor-pointer ${busy ? "opacity-40" : ""}`}
       >
         {busy ? "…" : hasPhoto ? `Replace photo for ${title}` : `Add photo for ${title}`}
       </label>
@@ -176,14 +176,28 @@ export function PhotoButton({
           type="button"
           disabled={busy}
           onClick={remove}
-          className="text-xs underline opacity-70 disabled:opacity-40"
+          className="ds-link ds-type-note disabled:opacity-40"
         >
           Remove photo
         </button>
       ) : null}
 
+      {/*
+        **A `<span>`, not `FormError`, because the parent is phrasing content**
+        and a `<p>` here would be invalid nesting.
+
+        This was a known gap for one tranche: `e2e/ui.ts` matched
+        `p[role="alert"]` only, so nothing could assert on this error or on
+        `report-checkin.tsx`'s, and the comment that used to sit here said so
+        and stopped. The audit of 11 September found a third — `today-roster
+        .tsx` — and widened the helper to `:is(p, span, li)` instead, since the
+        non-space-text filter was always the part doing the real work.
+
+        **Assertable now.** Keep the `<span>`; the element is chosen by what is
+        valid inside its parent, never by what a locator matches.
+      */}
       {error ? (
-        <span role="alert" className="text-xs text-red-600">
+        <span role="alert" className="ds-text-danger ds-type-note">
           {error}
         </span>
       ) : null}

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, useTransition } from "react"
 import { inviteUser, searchUsers, type FoundUser } from "@/app/actions/invites"
 import { Avatar } from "@/components/avatar"
+import { SecondaryButton } from "@/components/ui/button"
+import { FormError } from "@/components/ui/field"
 
 /** Matches the floor in `search_users`. Named once so the copy and the query agree. */
 const MIN_QUERY = 3
@@ -109,13 +111,22 @@ export function InvitePersonPanel({ groupId }: { groupId: string }) {
 
   return (
     <section aria-labelledby="invite-person" className="flex flex-col gap-3">
-      <h2 id="invite-person" className="text-lg font-semibold">
+      <h2 id="invite-person" className="ds-type-heading ds-text-primary">
         Invite someone
       </h2>
-      <p className="text-sm opacity-70">
+      <p className="ds-text-muted">
         Search by username. They get a notification with the invite in it.
       </p>
 
+      {/*
+        **The app's only live search**, and the field whose missing results list
+        set off the whole gap audit: the mock drew the input with nothing under
+        it, which is what a search box looks like when it does not work.
+
+        The label is `sr-only` rather than absent. A placeholder is not a label
+        — it disappears the moment anybody types, which is exactly when somebody
+        using a screen reader would want to know what the field is.
+      */}
       <label htmlFor="invite-search" className="sr-only">
         Search by username
       </label>
@@ -126,7 +137,7 @@ export function InvitePersonPanel({ groupId }: { groupId: string }) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="username"
-        className="rounded border px-3 py-2 text-sm"
+        className="ds-field"
       />
 
       {/*
@@ -134,20 +145,23 @@ export function InvitePersonPanel({ groupId }: { groupId: string }) {
         floor reads as a rule and not as "there is nobody called ry".
       */}
       {query.trim().length > 0 && tooShort ? (
-        <p className="text-sm opacity-60">
+        <p className="ds-type-note ds-text-muted">
           Type at least {MIN_QUERY} characters.
         </p>
       ) : null}
 
+      {/*
+        `role="status"` on both transient lines. A search that is running and a
+        search that found nobody are the two states somebody not watching the
+        screen most needs announced.
+      */}
       {searching && !tooShort ? (
-        <p className="text-sm opacity-60">Searching…</p>
-      ) : null}
-
-      {searchError && !tooShort ? (
-        <p role="alert" className="text-sm text-red-600">
-          {searchError}
+        <p role="status" className="ds-type-note ds-text-muted">
+          Searching…
         </p>
       ) : null}
+
+      {searchError && !tooShort ? <FormError>{searchError}</FormError> : null}
 
       {/*
         **"Nobody with that name" covers three cases and says one thing.** No
@@ -156,7 +170,7 @@ export function InvitePersonPanel({ groupId }: { groupId: string }) {
         would turn the box into a detector for the second one.
       */}
       {results && !tooShort && results.length === 0 && !searching && !searchError ? (
-        <p className="text-sm opacity-60">
+        <p role="status" className="ds-type-note ds-text-muted">
           Nobody with that name is available to invite.
         </p>
       ) : null}
@@ -166,24 +180,32 @@ export function InvitePersonPanel({ groupId }: { groupId: string }) {
           {results.map((user) => (
             <li
               key={user.id}
-              className="flex items-center justify-between gap-3 rounded border px-3 py-2 text-sm"
+              className="ds-panel flex items-center justify-between gap-3 px-3 py-2"
             >
-              <span className="flex min-w-0 items-center gap-2">
+              <span className="ds-text-primary flex min-w-0 items-center gap-2">
                 <Avatar url={user.avatarUrl} name={user.username} size={28} />
                 <span className="truncate">{user.username}</span>
               </span>
 
               {invited[user.id] ? (
-                <span className="shrink-0 text-xs opacity-60">Invited</span>
+                <span className="ds-type-note ds-text-muted shrink-0">
+                  Invited
+                </span>
               ) : (
-                <button
-                  type="button"
+                /*
+                  The name carries the username — "Invite ryahn1", not "Invite"
+                  — because `invite-user.spec.ts` locates it that way and,
+                  more to the point, a list of ten identical "Invite" buttons is
+                  ten controls a screen reader cannot tell apart.
+                */
+                <SecondaryButton
                   onClick={() => void invite(user)}
                   disabled={inviting === user.id}
-                  className="shrink-0 rounded border px-3 py-1 text-xs font-medium disabled:opacity-50"
+                  align="center"
+                  className="shrink-0"
                 >
                   {inviting === user.id ? "Inviting…" : `Invite ${user.username}`}
-                </button>
+                </SecondaryButton>
               )}
             </li>
           ))}
@@ -195,9 +217,7 @@ export function InvitePersonPanel({ groupId }: { groupId: string }) {
         say *which* invite failed once more than one has been tried.
       */}
       {Object.entries(failed).map(([id, message]) => (
-        <p key={id} role="alert" className="text-sm text-red-600">
-          {message}
-        </p>
+        <FormError key={id}>{message}</FormError>
       ))}
     </section>
   )

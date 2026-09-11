@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { OnboardingHeading } from "@/components/onboarding/onboarding-shell"
+import { PrimaryButton, SecondaryButton } from "@/components/ui/button"
 import {
   INSTALLABLE_EVENT,
   INSTALL_PROMPT_KEY,
@@ -82,29 +84,24 @@ export function InstallNudge({ next }: { next: string }) {
   }
 
   return (
-    <div className="flex w-full max-w-xs flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-xl font-semibold">Add Solarity to your home screen</h1>
-        <p className="text-sm opacity-70">
-          {branch === "installed"
+    <div className="flex w-full flex-col gap-4">
+      <OnboardingHeading
+        title="Add Solarity to your home screen"
+        lede={
+          branch === "installed"
             ? "You're already set up. Solarity opens like an app on this device."
-            : "It opens full screen, and it's the only way we can send you a reminder when your Circle is waiting on you."}
-        </p>
-      </div>
+            : "It opens full screen, and it's the only way we can send you a reminder when your Circle is waiting on you."
+        }
+      />
 
       {branch === "prompt" ? (
-        <button
-          type="button"
-          onClick={install}
-          disabled={dialogOpen}
-          className="rounded border px-4 py-2 text-sm font-medium disabled:opacity-50"
-        >
+        <PrimaryButton onClick={install} disabled={dialogOpen} full>
           {dialogOpen ? "Waiting for your browser…" : "Add to home screen"}
-        </button>
+        </PrimaryButton>
       ) : null}
 
       {branch === "ios" ? (
-        <ol className="flex list-decimal flex-col gap-1 pl-5 text-sm opacity-80">
+        <ol className="ds-text-primary flex list-decimal flex-col gap-1 pl-5">
           <li>
             Tap the Share button at the bottom of Safari, the square with an
             arrow pointing up.
@@ -115,29 +112,37 @@ export function InstallNudge({ next }: { next: string }) {
       ) : null}
 
       {branch === "manual" ? (
-        <p className="text-sm opacity-80">
+        <p className="ds-text-primary">
           Look for Install or Add to Home Screen in your browser&apos;s menu. If
           it isn&apos;t there, this browser can&apos;t install apps, and Solarity
           still works normally in a tab.
         </p>
       ) : null}
 
-      <button
-        type="button"
-        onClick={() => router.push(next)}
-        className="rounded border px-4 py-2 text-sm font-medium"
-      >
-        {/* The wording carries the decision, so nobody has to wonder whether
-            leaving has cost them something. */}
-        {branch === "installed" ? "Continue" : "I'll do this later"}
-      </button>
+      {/*
+        **Secondary except when it is the only way forward.** On the `installed`
+        branch there is nothing else to do, so "Continue" is the screen's one
+        action and gets the flame; everywhere else it sits under a real install
+        control and must not compete with it.
+      */}
+      {branch === "installed" ? (
+        <PrimaryButton onClick={() => router.push(next)} full>
+          Continue
+        </PrimaryButton>
+      ) : (
+        <SecondaryButton onClick={() => router.push(next)} full>
+          {/* The wording carries the decision, so nobody has to wonder whether
+              leaving has cost them something. */}
+          I&apos;ll do this later
+        </SecondaryButton>
+      )}
 
       {/* Only where it adds something. The `manual` branch has just said this
           in more detail, and someone already running standalone does not need
           telling how to install. A test caught the duplication: two paragraphs
           about the browser's menu, one screen. */}
       {branch === "prompt" || branch === "ios" ? (
-        <p className="text-xs opacity-60">
+        <p className="ds-type-note ds-text-muted">
           You can install Solarity any time from your browser&apos;s menu.
         </p>
       ) : null}

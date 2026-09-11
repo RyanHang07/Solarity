@@ -4433,6 +4433,146 @@ The exclusion in `TAB_NOTIFICATION_TYPES` therefore stays as a **guard rather th
 
 ---
 
+## The design port ✅ seven of nine tranches
+
+**The design system built in `solarity-ui` moved into the app, screen by
+screen, 8–10 September.** The plan and the per-tranche notes live in
+`docs/v1/design-port.md`; this is the record of what it cost and what it found.
+
+**909 legacy class uses at the start, 483 measured after tranche 4.** Chrome,
+auth, onboarding, Today/Overview, the Circle, goals, profiles, settings and the
+landing are done. Circle settings and admin/legal/join remain.
+
+### The three bugs that shipped and were caught by reading, not by looking
+
+**Fraunces was never ported.** `design-system.css` declares
+`--font-ds-display: var(--font-fraunces), "Times New Roman", serif`, and the
+font was only ever declared in the catalog's root layout. Every `ds-type-title`
+and `ds-type-metric` in the app rendered as a serif — with TypeScript, ESLint,
+the build and the token coverage check all green, because **falling back is what
+a fallback is for** and a serif looks deliberate. The lesson is general: *the CSS
+moves between repos, the fonts do not.*
+
+**`ds-type-body` does not exist.** The scale deliberately made 14px the
+*inherited* base on `.ds-app` — 131 uses of `text-sm` were meant to be deleted,
+not renamed. A className matching no rule is an error nowhere.
+
+**`.ds-or` already existed** and had been hand-rebuilt from two `h-px flex-1`
+spans: the exact markup the token was created to delete.
+
+None was findable by opening the app, which is why `scripts/design-audit.mjs`
+now checks all three classes of thing mechanically.
+
+### A fourth recurring bug class, found in code written after reading about the
+### other three
+
+**The label is not a container.** Text inside a `<label>` joins the field's
+accessible name, so a hint under an input renames it: "Password" becomes
+"Password At least 8 characters, with a letter and a number." —
+announced as the name, then again as the description.
+`components/password-fields.tsx` carries a long comment about learning this the
+hard way, and the port's own `Field` reintroduced it anyway.
+
+### What the alignment pass found in our own component
+
+`placement()` always emits a `self-*` class, so **`PrimaryButton` always
+overrode its parent's `items-*`** — the Phase-1 bug the `align` prop was added
+to fix, surviving as the default. The rule that came out of it: *a button in a
+flex row states its alignment; a button in a column does not need to.*
+
+And the general form of a mistake made three times: **`opacity-*` on a container
+dims its border along with its text**, so "de-emphasise this row" is a colour
+decision, not an opacity one. A mostly-read notification list looked like it had
+holes punched in it.
+
+### Two e2e findings that were not about design at all
+
+**Eight specs were not clearing their rate-limit budget.** `clearRateLimits`'s
+own comment says it is called per spec file "so each file starts with a full
+budget", and four of twenty-five were doing it. Runs degraded across an hour
+rather than failing: 2 → 7 → 3 failures with no code change between the last two.
+A refusal renders as an alert *beside a control that is still on the page*, so
+every report was a claim about a feature.
+
+**A click on a visible, enabled submit button can do nothing at all.** A
+`<form action={fn}>` in a client component is not a submit target until React
+attaches. `moderation.spec.ts` was intermittent for an afternoon and the trace
+said why: no POST was ever sent. Three investigations went at rate limits, RLS
+and revalidation first. Both are written up in `docs/testing.md`.
+
+### One product change the port surfaced
+
+Blocking made `/profile/<them>` a 404 — correctly — and left you standing on it,
+so the reward for blocking somebody was Next's not-found page. `blockUser` now
+redirects to `/dashboard?notice=blocked`, using the app's existing keyed
+`Notice` rather than a new toast: those messages are looked up by key and never
+interpolated, because a notice that renders arbitrary query text is a phishing
+page on your own domain.
+
+The two `not-found.tsx` files were also written during this work. Solarity had
+none, and `admin/layout.tsx` calling `notFound()` for non-admins is the
+commonest way anyone reaches one.
+
+---
+
+## v1 closed — 11 September 2026
+
+**The design port finished all nine tranches and the full suite went green**,
+alongside `typecheck`, `eslint`, `build` and both design scripts. The port's own
+record — the tranche table, the five bug classes, the deliberate divergences —
+moved to `docs/v1/design-port.md`, and the standing guidance to
+`docs/design-system.md`. `build-plan.md` is now open work only.
+
+### The mock comparison, and the checker that lied
+
+`scripts/mock-diff.mjs` was written to ask the question nothing else could: not
+*is every class real* but *is it the class the design chose*. Its first run
+reported 16 differing screens and was mostly fiction.
+
+The `Sources:` parser matched paths with `[^\s(]+`, so a route group's opening
+paren ended the match — `app/(app)/(shell)/dashboard/page.tsx` became `app/`,
+which is not a `.tsx` and was filtered away. Eighteen mocks name route-group
+paths. Four screens were left comparing a whole mock against the one paren-free
+file in their list; **fourteen resolved to nothing and were skipped in silence**,
+including Today, Circle, goals, profile and every admin page.
+
+**The parsing was the shallow half.** The script treated *no sources declared*
+and *sources declared, none parsed* as the same event, so a bug in the checker
+was indistinguishable from a design with no screen yet. A report naming 16
+screens invites exactly one inference about the rest, and that inference was
+wrong for a third of the app. The fix is not really the regex: `NOT CHECKED` is
+now printed with the unresolved paths, counted, and exits non-zero, because
+**silence has to mean checked-and-clean** or the report cannot be read at all.
+
+This is the second time a check in this repo has been more confident than
+correct, and both times the damage was an *absence* — a screen not named, a
+diagnosis written in a comment above code that did not implement it.
+
+### What the honest run found
+
+27 screens compared, none unchecked, and most findings were not defects. The
+dominant class is the one worth remembering: **the check cannot see through a
+component boundary.** `components/ui/button.tsx` emits
+`ds-cta ds-bg-flame ds-text-on-light ds-type-label ds-panel ds-text-primary` and
+`field.tsx` emits `ds-field`, so every screen using `PrimaryButton` or `Field`
+reports all of them missing. That is the extraction working exactly as intended,
+and a flat mock compared against a composed implementation will always say so.
+
+After removing that class, sample data, four stale `Sources:` headers and one
+script limitation, **eight screens carry genuine gaps** — `join` the largest and
+the one a new person sees first. They are listed in `build-plan.md`. None is a
+bug a user would report; each is a design decision the port did not carry.
+
+Two smaller lessons from hand-checking Today while the sandbox was down:
+`ds-text-danger` appeared to be missing but exists in the mock only inside a
+comment arguing *against* using it there — **this codebase quotes its own class
+names in prose**, which is why `tokens()` strips comments first. And
+`ds-container` is genuinely absent from `/today` because it lives on the
+`<main>` in `app/(app)/layout.tsx` that wraps the route; a standalone mock has to
+carry its own.
+
+---
+
 ## The index: every numbered step, and where its reasoning is
 
 **All twenty-one are built, and the unit suite is green.** Step 20 was the last functional work before the galaxy; step 21 is the galaxy's data half. What remains of it — the two screens and the design system — is in `build-plan.md`. Everything in this table is written up above, in this file.

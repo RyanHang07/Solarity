@@ -267,9 +267,26 @@ test("robots keeps crawlers away from invite links", async ({ request }) => {
 test("the landing page explains the product without an account", async ({ page }) => {
   await page.goto("/")
 
-  await expect(page.getByRole("heading", { name: "Solarity", level: 1 })).toBeVisible()
+  /**
+   * **The `<h1>` is the headline now, not the wordmark.**
+   *
+   * It used to be the word "Solarity", which named the *site* rather than the
+   * page — so a screen reader's outline for the landing page said the brand and
+   * nothing about what the product does. The design pass made the value
+   * proposition the heading, which is what a landing page's `<h1>` is for, and
+   * this assertion followed it rather than holding it back.
+   *
+   * Matched on a fragment rather than the full string: the headline is broken
+   * across three lines with a `<br>` and a coloured span, so its accessible
+   * name carries whitespace that is a styling detail rather than a claim.
+   */
+  await expect(
+    page.getByRole("heading", { level: 1, name: /keep you honest/i }),
+  ).toBeVisible()
 
-  // Both ways in, from the page every invited person lands on first.
+  // Both ways in, from the page every invited person lands on first. Two
+  // "Create an account" links now — the hero's and the closing act's — which is
+  // what `.first()` is for.
   await expect(page.getByRole("link", { name: "Create an account" }).first()).toBeVisible()
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible()
 

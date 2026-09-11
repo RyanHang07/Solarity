@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
+import { OnboardingShell } from "@/components/onboarding/onboarding-shell"
 import { createClient } from "@/lib/supabase/server"
 import { CONTACT_EMAIL, MINIMUM_AGE, TERMS_VERSION, formatVersion } from "@/lib/legal"
 import { safeRedirect } from "@/lib/safe-redirect"
@@ -67,56 +68,55 @@ export default async function TermsGatePage({
   const destination = safeRedirect(next)
 
   return (
-    <main className="flex min-h-full flex-1 flex-col items-center justify-center gap-6 p-8">
-      <div className="flex w-full max-w-sm flex-col gap-4 rounded border px-4 py-5">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold">Before you carry on</h1>
-          <p className="text-sm opacity-70">
-            Solarity has terms and a privacy policy, and you signed in before
-            there was anything to agree to. Here they are.
-          </p>
-        </div>
+    /*
+      **This was the only onboarding screen already in a box**, and at
+      `max-w-sm` while the other four were `max-w-xs`. The shell makes that the
+      rule instead of the exception — the flow no longer changes shape on the
+      one screen that asks for a decision.
+    */
+    <OnboardingShell
+      title="Before you carry on"
+      lede="Solarity has terms and a privacy policy, and you signed in before there was anything to agree to. Here they are."
+    >
+      {/*
+        Left at the inherited size rather than made `ds-type-note`. These four
+        lines *are* the agreement in plain words — the links below are the
+        formal version — and shrinking the summary while the legalese stays
+        full size would say the opposite of what the screen is doing.
+      */}
+      <ul className="ds-text-primary flex list-disc flex-col gap-1 pl-5">
+        <li>You need to be {MINIMUM_AGE} or older.</li>
+        <li>
+          Your goals, notes and photos stay yours. They are shown to the Circles
+          you choose and nowhere else.
+        </li>
+        <li>
+          Don&apos;t post anything illegal, anything that harasses somebody, or a
+          photo of a person who hasn&apos;t agreed to be in it.
+        </li>
+        <li>
+          It&apos;s run by one person and it&apos;s free, so there are no
+          guarantees about it staying up or nothing being lost.
+        </li>
+      </ul>
 
-        <ul className="flex list-disc flex-col gap-1 pl-5 text-sm">
-          <li>You need to be {MINIMUM_AGE} or older.</li>
-          <li>
-            Your goals, notes and photos stay yours. They are shown to the
-            Circles you choose and nowhere else.
-          </li>
-          <li>
-            Don&apos;t post anything illegal, anything that harasses somebody, or
-            a photo of a person who hasn&apos;t agreed to be in it.
-          </li>
-          <li>
-            It&apos;s run by one person and it&apos;s free, so there are no
-            guarantees about it staying up or nothing being lost.
-          </li>
-        </ul>
+      <p className="ds-text-primary">
+        The full <Link href="/terms" className="ds-link">Terms</Link> and{" "}
+        <Link href="/privacy" className="ds-link">Privacy policy</Link> say the
+        rest. Both are short.
+      </p>
 
-        <p className="text-sm">
-          The full{" "}
-          <Link href="/terms" className="underline">
-            Terms
-          </Link>{" "}
-          and{" "}
-          <Link href="/privacy" className="underline">
-            Privacy policy
-          </Link>{" "}
-          say the rest. Both are short.
-        </p>
+      <AcceptForm next={destination} />
 
-        <AcceptForm next={destination} />
-
-        <p className="text-xs opacity-60">
-          Agreeing records the date and the version ({formatVersion(TERMS_VERSION)})
-          against your account, and nothing else. If you&apos;d rather not, write
-          to{" "}
-          <a href={`mailto:${CONTACT_EMAIL}`} className="underline">
-            {CONTACT_EMAIL}
-          </a>{" "}
-          and your account will be deleted.
-        </p>
-      </div>
-    </main>
+      <p className="ds-type-note ds-text-muted">
+        Agreeing records the date and the version ({formatVersion(TERMS_VERSION)})
+        against your account, and nothing else. If you&apos;d rather not, write
+        to{" "}
+        <a href={`mailto:${CONTACT_EMAIL}`} className="ds-link">
+          {CONTACT_EMAIL}
+        </a>{" "}
+        and your account will be deleted.
+      </p>
+    </OnboardingShell>
   )
 }

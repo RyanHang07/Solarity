@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test"
 import {
   admin,
   checkinDateFor,
+  clearRateLimits,
   deleteE2EGoals,
   E2E_PREFIX,
   freeGoalSlots,
@@ -15,6 +16,20 @@ import {
 // the test would be asserting against a date the account never had.
 import { addDays } from "@/lib/digest-days"
 import { storageStateFor } from "./session"
+
+/**
+ * Four `Add goal` submissions per run against `createGoal` (20/hour, keyed by
+ * user id, and the suite shares two accounts).
+ *
+ * **Insurance rather than a fix for a live failure**: five clean runs in an hour
+ * would exhaust it, which nobody does by hand. A retried test re-runs whole,
+ * though, so a bad afternoon of three runs with retries gets closer than the
+ * ratio suggests — and the symptom would be a creation refused in a spec that
+ * never mentions rate limits. See `clearRateLimits`.
+ */
+test.beforeAll(async () => {
+  await clearRateLimits()
+})
 
 /**
  * Step 14c. `total_goals_achieved` for one account, read and put back.

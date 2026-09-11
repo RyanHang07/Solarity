@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { enforce } from "@/lib/ratelimit"
 import { containsProfanity } from "@/lib/profanity"
@@ -98,7 +99,36 @@ export async function blockUser(
   }
 
   revalidateAfterBlockChange()
-  return { ok: true, data: undefined }
+
+  /**
+   * **Leave the page, because blocking deletes it.**
+   *
+   * `/profile/<them>` 404s the moment this lands — correctly, since a blocked
+   * profile and a username nobody has are deliberately the same answer. So
+   * returning `{ ok: true }` and staying put meant the reward for blocking
+   * somebody was Next's not-found page, which reads as the app breaking at the
+   * exact moment a person has done something deliberate and slightly fraught.
+   *
+   * **The dashboard, not `/profile`.** Your own profile is *a* valid
+   * destination and the wrong one: it answers "where can I go" rather than
+   * "what just happened", and leaves somebody one tab away from the page they
+   * were trying to get away from. The dashboard is where every other notice
+   * redirect in this app lands.
+   *
+   * **`?notice=`, not a toast.** The app has one mechanism for "something
+   * happened on the way here"; it is keyed rather than interpolated, and it
+   * dismisses by navigating to the same route without the param. A second
+   * system would need its own state, its own dismissal and its own reason to
+   * exist.
+   *
+   * **Only this half redirects.** `unblockUser` runs from the blocked list in
+   * settings, where staying put is the right answer — the list is the thing you
+   * came to edit.
+   *
+   * After `revalidateAfterBlockChange`, so the dashboard renders with the block
+   * already applied rather than one navigation stale.
+   */
+  redirect("/dashboard?notice=blocked")
 }
 
 /**

@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { Panel } from "@/components/ui/panel"
 import {
   formatDay,
   streakDelta,
@@ -43,11 +44,16 @@ export function DigestPanel({
   today: string | null
 }) {
   return (
-    <section aria-label="Recent days" className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">How it went</h2>
-
+    /*
+      **`aria-label="Recent days"` stays and does not become the heading.**
+      `digests.spec.ts` locates this region by that name while the visible
+      heading says "How it went" — the label is the plain description and the
+      heading is the voice. Panel's `title` renders the `<h2>`; the label is
+      passed through to the `<section>`.
+    */
+    <Panel title="How it went" aria-label="Recent days">
       {days.length === 0 ? (
-        <p className="text-sm opacity-70">
+        <p className="ds-text-muted">
           Join or start a Circle and this fills in after the first day ends.
         </p>
       ) : (
@@ -59,11 +65,11 @@ export function DigestPanel({
               // list items, so `getByRole("listitem")` matches nested ones and
               // `.nth(1)` lands inside the first box rather than on the second.
               data-testid="digest-day"
-              className="flex flex-col gap-2 rounded border px-3 py-2"
+              className="ds-panel flex flex-col gap-2 px-3 py-2"
             >
               {/* The box is titled with its day, which is the whole point of
                   grouping: a Circle's number means little without one. */}
-              <h3 className="text-sm font-semibold">{formatDay(day.date, today ?? undefined)}</h3>
+              <h3 className="ds-eyebrow">{formatDay(day.date, today ?? undefined)}</h3>
 
               <ul className="flex flex-col gap-1">
                 {day.circles.map((circle) => (
@@ -79,7 +85,7 @@ export function DigestPanel({
           ))}
         </ol>
       )}
-    </section>
+    </Panel>
   )
 }
 
@@ -96,26 +102,26 @@ function CircleLine({
   const nobody = circle.completed === 0
 
   return (
-    <li data-testid="digest-circle" className="text-sm">
+    <li data-testid="digest-circle">
       <details className="group">
-        <summary className="flex cursor-pointer items-baseline justify-between gap-3">
+        <summary className="ds-text-primary flex cursor-pointer items-baseline justify-between gap-3">
           <span className="flex items-baseline gap-2">
             <span>{circle.circleName}</span>
             {/* Said quietly rather than hidden. The day it reported still
                 happened; without a word here, a Circle that stops appearing in
                 newer boxes looks like a dropped row. */}
             {circle.inactive ? (
-              <span className="text-xs opacity-50">inactive</span>
+              <span className="ds-type-note ds-text-muted">inactive</span>
             ) : null}
           </span>
 
-          <span className="shrink-0 opacity-70">
+          <span className="ds-text-muted shrink-0">
             {circle.completed} of {circle.members} finished
           </span>
         </summary>
 
         <div className="mt-1 flex flex-col gap-1 pl-1">
-          <p className="text-xs opacity-60">
+          <p className="ds-type-note ds-text-muted">
             Group streak {circle.groupStreak}
             {/* `null` is not "held": with no day beneath this one there is
                 nothing to compare, and saying "held" would be inventing a fact. */}
@@ -127,12 +133,14 @@ function CircleLine({
           {circle.roster.length === 0 ? (
             // A snapshot written before the roll call existed, or one whose
             // shape changed. The counts above are still true.
-            <p className="text-xs opacity-60">No member detail for this day.</p>
+            <p className="ds-type-note ds-text-muted">
+              No member detail for this day.
+            </p>
           ) : (
-            <ul className="flex flex-col gap-0.5">
+            <ul className="ds-type-note flex flex-col gap-0.5">
               {circle.roster.map((member) => (
-                <li key={member.userId} className="flex items-baseline gap-2 text-xs">
-                  <span aria-hidden className="opacity-70">
+                <li key={member.userId} className="flex items-baseline gap-2">
+                  <span aria-hidden className="ds-text-flame">
                     {member.completed ? "✓" : "✗"}
                   </span>
                   {/* The visible tick is decorative; the words carry it for a
@@ -140,11 +148,15 @@ function CircleLine({
                   <span className="sr-only">
                     {member.completed ? "finished" : "did not finish"}
                   </span>
-                  <span className={member.completed ? "" : "opacity-70"}>
+                  <span
+                    className={
+                      member.completed ? "ds-text-primary" : "ds-text-muted"
+                    }
+                  >
                     {member.username}
                     {member.userId === viewerId ? " (you)" : null}
                   </span>
-                  <span className="opacity-50">
+                  <span className="ds-text-muted">
                     {member.streak > 0 ? `streak ${member.streak}` : "no streak"}
                   </span>
                 </li>
@@ -154,7 +166,7 @@ function CircleLine({
 
           <Link
             href={`/circles/${circle.groupId}?tab=overview`}
-            className="text-xs underline opacity-70"
+            className="ds-link ds-type-note self-start"
           >
             Open {circle.circleName}
           </Link>

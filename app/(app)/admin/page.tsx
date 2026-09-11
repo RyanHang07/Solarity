@@ -38,14 +38,18 @@ export default async function AdminReportsPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <nav className="flex gap-3 border-b text-sm">
+      <nav className="ds-border-oatmeal flex gap-3 border-b">
         {TABS.map((t) => (
           <Link
             key={t.key}
             href={`/admin?status=${t.key}`}
             aria-current={active === t.key ? "page" : undefined}
-            className={`px-1 pb-2 ${
-              active === t.key ? "border-b-2 font-medium" : "opacity-70"
+            /* The same tab shape as the Circle page: flame and an underline on
+               the current one, muted otherwise. */
+            className={`ds-type-label px-1 pb-2 ${
+              active === t.key
+                ? "ds-text-flame border-b-2 border-current"
+                : "ds-text-muted"
             }`}
           >
             {t.label}
@@ -55,19 +59,19 @@ export default async function AdminReportsPage({
 
       {reports.length === 0 ? (
         // An empty queue is the good outcome and should read like one.
-        <p className="text-sm opacity-70">Nothing {active}.</p>
+        <p className="ds-text-muted">Nothing {active}.</p>
       ) : (
         <ul aria-label="Reports" className="flex flex-col gap-2">
           {reports.map((r) => (
-            <li key={r.id} className="rounded border px-3 py-2 text-sm">
+            <li key={r.id} className="ds-panel px-3 py-2">
               <Link href={`/admin/reports/${r.id}`} className="flex flex-col gap-1">
                 <span className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span>
+                  <span className="ds-text-primary">
                     <strong>{r.reported_username ?? "a deleted account"}</strong>
                     {" · "}
                     {SAYS[r.content_type] ?? r.content_type}
                   </span>
-                  <span className="text-xs opacity-60">
+                  <span className="ds-type-note ds-text-muted">
                     {new Date(r.created_at).toLocaleString()}
                   </span>
                 </span>
@@ -75,12 +79,14 @@ export default async function AdminReportsPage({
                 {/* The reason, truncated. The full text is on the report page;
                     a queue is for choosing what to open. */}
                 {r.reason ? (
-                  <span className="line-clamp-2 text-xs opacity-70">{r.reason}</span>
+                  <span className="ds-type-note ds-text-primary line-clamp-2">
+                    {r.reason}
+                  </span>
                 ) : (
-                  <span className="text-xs opacity-50">No reason given</span>
+                  <span className="ds-type-note ds-text-muted">No reason given</span>
                 )}
 
-                <span className="text-xs opacity-60">
+                <span className="ds-type-note ds-text-muted">
                   Reported by {r.reporter_username ?? "a deleted account"}
                 </span>
               </Link>

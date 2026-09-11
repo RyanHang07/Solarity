@@ -74,6 +74,157 @@ The second is what sent this suite through four wrong diagnoses. A page showing 
 
 **Reuse is safe here for a specific reason**, not by luck: an access token outlives a three-minute suite, so nothing triggers a refresh and nothing rotates the refresh token. A much longer run would need a different answer.
 
+### The app's own limiter is a second budget, and it degrades instead of failing
+
+Sibling to the one above and a different system entirely: `lib/ratelimit.ts`, cleared by `clearRateLimits` in `e2e/db.ts`. Its comment says the function is called per spec file "so each file starts with a full budget and neither has to know what the other spent". **Only four of twenty-five files were actually calling it**, and the gap cost three runs during the design port.
+
+The three specs that spend the most — `streak-decision`, `moderation`, `roster` — all seed a Circle and join it, and neither was clearing. `joinCircle` is 10/hour keyed by the joiner's user id, which is one real account the whole suite shares. `/join/[token]` charges `inviteAttempt` on page load as well: 20/hour keyed by client IP, and localhost gives every request from the runner the same bucket.
+
+**The failure does not look like a limit, which is the whole problem.** A refusal renders as an alert *beside a control that is still on the page*, so the report reads:
+
+- "the block did not apply" — a claim about moderation
+- "the click had no effect" — a claim about a form action
+- and once the page-load limit goes too, a 30s timeout waiting for a Join button that was never going to render, because the page drew "Too many invite links" instead
+
+Every one of those is a claim about a feature, and every one is wrong.
+
+**The tell was the variance, not any single failure.** Three runs inside one hour gave 2, then 7, then 3 failures with *no code change between the last two*. That is not flakiness; it is a budget draining and partially refilling on a sliding window. A suite whose failure count moves with the time of day is being metered, not broken. Two rounds of diagnosis went into timing and hydration before anyone read the `alert` line sitting in the page snapshot the whole time.
+
+**So: any spec that creates or joins a Circle calls `clearRateLimits()` in `beforeAll`.** Eight files do now. Nothing enforces it — there is no type that can — so it is written here and on the function.
+
+**Not fixable by raising a limit.** 5 Circles a day and 10 joins an hour are product decisions in `lib/ratelimit.ts`, and a suite that quietly widens a production control to suit itself stops testing the product. Clearing a budget is visible and scoped to the two test accounts; changing the number is neither.
+
+**Read the snapshot before theorising.** `test-results/*/error-context.md` holds the accessibility tree at the moment of failure, and in this case it contained the literal string `You're doing that too often`. That is the second time in this document that the answer was in the snapshot and the investigation went elsewhere first.
+
+### A click before hydration is silent, and the form is where it shows
+
+**The general shape, learned from `moderation.spec.ts`.** A `<form action={fn}>`
+in a client component is not a submit target until React attaches: before that,
+React sets the `action` attribute to a placeholder so a premature submit cannot
+navigate. So a click on a real, visible, enabled submit button can do **nothing
+at all** — no request, no error, no state change.
+
+Every symptom of this lies. The button is there, the click succeeds, and the
+failure surfaces later as an assertion about the *feature* — "the blocked
+profile was still rendered" — which sends you looking at rate limits, RLS and
+revalidation, in that order, for an afternoon.
+
+**The tell is the network, not the DOM.** If a server action is involved and the
+trace shows no POST to the current URL, nothing ran. Check that before any
+theory about the action's own logic.
+
+**Two habits that make it deterministic:**
+
+1. **Wait for something only client state can produce** before touching a form
+   that appeared as a result of a click. A confirm panel rendering *is* proof
+   React is attached.
+2. **Wait on the POST**, not just the click:
+   ```ts
+   await Promise.all([
+     page.waitForResponse((r) => r.request().method() === "POST"),
+     page.getByRole("button", { name: "Block", exact: true }).click(),
+   ])
+   ```
+   This fails at the cause with a useful message instead of three steps later.
+
+**`submitAndWait` in `e2e/ui.ts` is habit 2 as a function**, added 11 September.
+It asserts `toBeEnabled()` rather than `toBeVisible()` first, because a
+`useFormStatus` submit is disabled while a previous submission is in flight and
+clicking a disabled button is a silent no-op that reproduces this very bug.
+
+**It is not retrofitted across the suite, deliberately.** Eighteen client
+components render such a form and only `moderation.spec.ts` guarded before this;
+the rest pass because they happen to assert something first, which proves
+hydration by accident. Rewriting working specs wholesale risks more than it
+fixes. Adopt it where a spec is being edited anyway.
+
+**And a `loading.tsx` widens this window.** Adding one to `/join/[token]` made
+the route stream, so the shell painted before hydration and the Join button
+gained a dead interval that `streak-decision.spec.ts` caught intermittently. It
+was reverted. On any route carrying a client-component form, a loading file
+changes *when* hydration lands relative to paint, and nothing says so until
+something races. See `patterns.md`, seam-shaped.
+
+Worth applying wherever a spec clicks a submit inside a panel that a previous
+click revealed. `streak-decision.spec.ts` and `invite.spec.ts` have the same
+confirm-then-submit shape.
+
+### The navigating poll, which is the same bug wearing a loop
+
+**`gates.spec.ts` had three of these and they were fixed in two passes**, which
+is the part worth recording. The shape:
+
+```ts
+await expect.poll(async () => {
+  await page.goto("/dashboard")          // ← navigates away from /today
+  return new URL(page.url()).pathname
+}).toBe("/dashboard")
+```
+
+`MarkSeen` writes the day cookie from a `useEffect`, so it cannot fire until
+`/today` hydrates — and every iteration navigates *away*, able to cancel the
+in-flight server action before its `Set-Cookie` returns. The loop can keep
+re-arming the thing it is waiting for, and it passes only when hydration beats
+the next navigation.
+
+**Poll the precondition on a page that stays put**, then navigate once:
+
+```ts
+await expect.poll(async () =>
+  (await page.context().cookies()).find((c) => c.name === "solarity_today_seen")?.value,
+).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+
+await page.goto("/dashboard")
+await expect(page).toHaveURL(/\/dashboard$/)
+```
+
+**The third instance was missed because its comment already described the
+problem** — "the mark-seen action fires after the page paints, so the second
+visit has to wait for the cookie rather than assume it" — sitting directly above
+a poll that did not wait for the cookie. A comment that states the right
+diagnosis is not evidence the code implements it.
+
+Every other `.poll` in the suite reads a database row, a cookie or an in-page
+value. **A poll whose body navigates is the thing to look for.**
+
+### `moderation` — the intermittent, and what it was *not*
+
+`blocking hides the profile from both sides` failed four times across one
+afternoon and then went green with no code change. **The cause was the
+hydration race above** — the trace showed no POST, so the confirm's form never
+submitted. The eliminations below are kept because each cost real time, and
+because they are the wrong answers somebody will reach for again.
+
+**Symptom.** After the two-step block, `/profile/<name>` still renders the
+profile region, and the screenshot shows the page still offering
+"Block &lt;name&gt;" — so the page believes no block exists.
+
+**Ruled out, each with evidence:**
+
+| Suspect | Why not |
+|---|---|
+| Rate limiting | `blockUser` is the one moderation action with no `enforce()` call. Nothing meters it |
+| RLS refusing the insert | `user_blocks_insert_own` is `with_check (blocker_user_id = auth.uid())`. Correct, and nothing stricter |
+| A wrong id in the form | `ProfileActions` gets `profile.userId`, the same value the circle-sharing query on that page uses successfully |
+| Revalidation | The test does a fresh `goto()`, so the server re-renders regardless of `revalidatePath` |
+| The design port | It reproduced before `profile-actions.tsx` was touched, and that file is still unported |
+
+**The check that looked decisive and is not.** Querying `user_blocks` after a
+run proves nothing: the spec's own `clearBlocks()` helper deletes those rows in
+cleanup, so the table is empty either way. Do not repeat it.
+
+**What would actually settle it**, next time it reproduces: the server action's
+response in the Playwright trace. `blockUser` can only return one of three
+strings — `Missing account.`, `Please sign in again.`, `You can't block
+yourself.` — so whichever appears names the branch. If **none** appears, the
+form never submitted and the fault is the confirm click rather than the action.
+
+**Why it is worth chasing rather than shrugging at.** This file's own header
+says it: *"Blocking is the one feature here whose failure is invisible. A block
+that silently does not apply looks exactly like a block that does, from the
+side that matters."* An intermittent here is an intermittent in the one control
+whose failure nobody would report.
+
 ### A session per context, not a shared file
 
 **Supabase rotates refresh tokens**, so a stored storage state is single-use in practice. The first context to refresh consumes the token and gets a replacement in memory; the next context starts from the file, presents the spent token, and is signed out.

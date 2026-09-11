@@ -97,6 +97,22 @@ export async function findCircleByName(name: string) {
  *
  * Called per spec file rather than once per run, so each file starts with a
  * full budget and neither has to know what the other spent.
+ *
+ * **That was an invariant only four files were honouring**, and the drift cost
+ * three runs. `streak-decision`, `moderation` and `roster` all seed Circles and
+ * join them without clearing first, so a second or third run inside one hour
+ * exhausted `joinCircle` (10/h) and `inviteAttempt` (20/h, one IP for the whole
+ * runner) partway through the suite.
+ *
+ * **The failure does not look like a limit.** A refusal renders as an alert
+ * beside a control that is still on the page, so the test reports "the block
+ * did not apply" or "the click had no effect" — claims about the feature — and
+ * the count of failures moves run to run with how much budget was left. Three
+ * different sets of failures across three runs, with no code change between the
+ * last two, was the tell.
+ *
+ * **So: any spec that creates or joins a Circle calls this in `beforeAll`.**
+ * The list is not enforceable by a type, which is why it is written down here.
  */
 export async function clearRateLimits() {
   const patterns: string[] = []

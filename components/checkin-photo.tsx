@@ -37,7 +37,9 @@ export function CheckinPhoto({
 
   if (broken) {
     return (
-      <span className="text-xs opacity-60">Photo link expired. Reload to see it.</span>
+      <span className="ds-type-note ds-text-muted">
+        Photo link expired. Reload to see it.
+      </span>
     )
   }
 

@@ -3,18 +3,16 @@
 import { useActionState, useSyncExternalStore } from "react"
 import { useFormStatus } from "react-dom"
 import { completeOnboarding } from "@/app/actions/onboarding"
+import { PrimaryButton } from "@/components/ui/button"
+import { Field, FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
 
 function Submit() {
   const { pending } = useFormStatus()
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="rounded border px-4 py-2 text-sm font-medium disabled:opacity-50"
-    >
+    <PrimaryButton type="submit" disabled={pending} full>
       {pending ? "Saving…" : "Continue"}
-    </button>
+    </PrimaryButton>
   )
 }
 
@@ -43,11 +41,19 @@ export function OnboardingForm() {
   const timezone = useSyncExternalStore(noSubscribe, readTimezone, serverTimezone)
 
   return (
-    <form action={action} className="flex w-full max-w-xs flex-col gap-3">
-      <label htmlFor="username" className="text-sm font-medium">
-        Pick a username
-      </label>
-      <input
+    /*
+      **The width came off.** This was `max-w-xs` while the terms screen was
+      `max-w-sm`, which is the disagreement `OnboardingShell` exists to end —
+      the shell owns the measure now and the form fills it.
+    */
+    <form action={action} className="flex w-full flex-col gap-3">
+      {/*
+        The rules travel as `hint`, so they are described rather than named.
+        They were already a sibling `<p>` here rather than inside the label,
+        which is the shape `Field` enforces — this screen had it right first.
+      */}
+      <Field
+        label="Pick a username"
         id="username"
         name="username"
         required
@@ -57,25 +63,23 @@ export function OnboardingForm() {
         autoComplete="off"
         autoCapitalize="none"
         spellCheck={false}
-        className="rounded border px-3 py-2 text-sm"
+        hint="3–30 characters. Letters, numbers and underscores. This is what your Circles see."
       />
-      <p className="text-xs opacity-60">
-        3–30 characters. Letters, numbers and underscores. This is what your
-        Circles see.
-      </p>
 
       <input type="hidden" name="timezone" value={timezone} />
+      {/*
+        Not a second `hint` on the field above. It is a fact about the account
+        rather than a rule about the input, and folding it into the field's
+        description would have a screen reader read the timezone every time the
+        username is focused.
+      */}
       {timezone ? (
-        <p className="text-xs opacity-60">
+        <p className="ds-type-note ds-text-muted">
           Your day resets at midnight in {timezone}.
         </p>
       ) : null}
 
-      {state && !state.ok ? (
-        <p role="alert" className="text-sm text-red-600">
-          {state.error}
-        </p>
-      ) : null}
+      {state && !state.ok ? <FormError>{state.error}</FormError> : null}
 
       <Submit />
     </form>

@@ -39,7 +39,7 @@ export default function TermsPage() {
           A place to set daily goals and let a few friends see whether you kept
           them. Circles are invite-only and hold at most ten people.
         </p>
-        <p className="opacity-70">
+        <p className="ds-text-muted">
           It is run by {CONTROLLER_NAME}, one person, early in its life, and
           free. Expect it to change. There is no company behind it, which is
           worth knowing before you rely on it for anything.
@@ -66,7 +66,7 @@ export default function TermsPage() {
           another person, or a photo of someone who has not agreed to be in it.
           Anything sexual involving a minor will be reported.
         </p>
-        <p className="opacity-70">
+        <p className="ds-text-muted">
           Accounts that break these can be removed without notice. There are no
           automated content checks — it is a small app, and this runs on people
           telling me.
@@ -86,7 +86,7 @@ export default function TermsPage() {
           them and theirs from you. It does not remove either of you from a
           Circle you both joined, and it does not tell them. Undo it in settings.
         </p>
-        <p className="opacity-70">
+        <p className="ds-text-muted">
           Reporting is for content that breaks these terms. Filing reports about
           somebody you simply disagree with is itself a misuse of it — block them
           instead.
@@ -130,7 +130,7 @@ export default function TermsPage() {
           the export in your settings keeps working for as long as the site is
           up.
         </p>
-        <p className="opacity-70">
+        <p className="ds-text-muted">
           {/*
             **Twice wrong, in opposite directions.** It first promised you would
             "be told with enough notice", which no mechanism could keep. That
@@ -154,7 +154,7 @@ export default function TermsPage() {
           continuing to use Solarity after that date is what agreement to the
           new version looks like.
         </p>
-        <p className="opacity-70">
+        <p className="ds-text-muted">
           {/*
             **This paragraph said the opposite until step 20c**, and it was
             true when it was written: Google sign-in shows no checkbox, so

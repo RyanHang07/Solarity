@@ -13,6 +13,7 @@ import {
 import { inspect, type PhotoProblem } from "@/lib/photo-upload"
 import { setAvatar } from "@/app/actions/settings"
 import { Avatar } from "@/components/avatar"
+import { FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
 
 /**
@@ -137,7 +138,7 @@ export function AvatarForm({
 
   return (
     <section aria-labelledby="avatar" className="flex flex-col gap-3">
-      <h2 id="avatar" className="text-lg font-semibold">
+      <h2 id="avatar" className="ds-type-heading ds-text-primary">
         Picture
       </h2>
 
@@ -162,9 +163,15 @@ export function AvatarForm({
               if (file) void upload(file)
             }}
           />
+          {/*
+            The label *is* the button — clicking it opens the picker natively,
+            with no `input.click()` and so no user-activation rule to satisfy.
+            `busy` keeps its raw opacity: an upload in flight has no token, and
+            inventing one for a single control would be worse than the utility.
+          */}
           <label
             htmlFor="avatar-file"
-            className={`cursor-pointer text-sm underline ${busy ? "opacity-40" : "opacity-70"}`}
+            className={`ds-link cursor-pointer ${busy ? "opacity-40" : ""}`}
           >
             {busy ? "Saving…" : currentUrl ? "Replace picture" : "Add a picture"}
           </label>
@@ -172,29 +179,26 @@ export function AvatarForm({
           {currentUrl ? (
             <form action={action}>
               <input type="hidden" name="clear" value="on" />
-              <button type="submit" className="text-sm underline opacity-70">
+              <button type="submit" className="ds-link self-start">
                 Remove picture
               </button>
             </form>
           ) : null}
 
-          <p className="text-xs opacity-60">
+          <p className="ds-type-note ds-text-muted">
             Square, up to {MAX_AVATAR_BYTES / 1024 / 1024}MB. Anyone signed in can
             see it on your profile.
           </p>
         </div>
       </div>
 
-      {error ? (
-        <p role="alert" className="text-sm text-red-600">
-          {error}
-        </p>
-      ) : null}
-      {state && !state.ok ? (
-        <p role="alert" className="text-sm text-red-600">
-          {state.error}
-        </p>
-      ) : null}
+      {/*
+        Two separate alerts, and they are not redundant: `error` is the upload
+        failing in the browser, `state.error` is the action refusing on the
+        server. Collapsing them would lose which half went wrong.
+      */}
+      {error ? <FormError>{error}</FormError> : null}
+      {state && !state.ok ? <FormError>{state.error}</FormError> : null}
     </section>
   )
 }

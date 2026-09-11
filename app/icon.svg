@@ -1,0 +1,44 @@
+<!--
+  The app icon: `SunMark` on the abyss.
+
+  Next serves this at /icon.svg and writes the <link rel="icon"> itself, so
+  there is no tag to keep in sync.
+
+  ## The hexes are inlined, and that is not laziness
+
+  `components/marks/marks.tsx` says "nothing here hardcodes a hex", and it is
+  right: a mark inside the app inherits `currentColor` and the palette stays in
+  `design-system.css`. **A standalone asset cannot do that.** There is no
+  cascade reaching a favicon, so `var(--ds-abyss)` would resolve to nothing and
+  the centre would punch a hole straight through the icon.
+
+  Same shape as the Fraunces bug: the CSS moves, the thing that resolves it does
+  not. So these two values are copies, and they are the only copies —
+  #0f1620 is --ds-abyss, #ffb162 is --ds-burning-flame. Change the tokens and
+  this file needs changing with them.
+
+  ## The geometry is `SunMark`'s, scaled rather than redrawn
+
+  Native viewBox is -40 -40 80 80. Placed here at translate(256,256) scale(4),
+  so the mark spans 320 of 512 — 62%, which leaves the ray tips clear of the
+  corner radius iOS applies without asking.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#0f1620"/>
+  <g transform="translate(256,256) scale(4)">
+    <g fill="#ffb162">
+      <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z"/>
+      <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z" transform="rotate(45)"/>
+      <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z" transform="rotate(90)"/>
+      <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z" transform="rotate(135)"/>
+      <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z" transform="rotate(180)"/>
+      <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z" transform="rotate(225)"/>
+      <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z" transform="rotate(270)"/>
+      <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z" transform="rotate(315)"/>
+    </g>
+    <!-- The hollow centre. It is what stops the mark reading as a bullet point,
+         and it is filled with the background rather than left transparent so the
+         icon survives being composited onto a light surface. -->
+    <circle r="5.5" fill="#0f1620" stroke="#ffb162" stroke-width="2"/>
+  </g>
+</svg>

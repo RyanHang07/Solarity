@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test"
 import {
   admin,
   checkinDateFor,
+  clearRateLimits,
   createCircleViaApi,
   daysBack,
   deleteDigests,
@@ -59,6 +60,17 @@ test.afterAll(async () => {
   await deleteE2ECircles()
 })
 
+/**
+ * A full budget, the same one `invite.spec.ts` takes.
+ *
+ * This file seeds Circles, and Circle creation is metered against the two
+ * accounts the whole suite shares. Per file rather than per run, so no spec has
+ * to know what the one before it spent — see `clearRateLimits`.
+ */
+test.beforeAll(async () => {
+  await clearRateLimits()
+})
+
 test("Overview groups digests into dated boxes, newest first, five at most", async ({
   browser,
 }) => {
@@ -81,10 +93,23 @@ test("Overview groups digests into dated boxes, newest first, five at most", asy
     // many boxes rendered — a test that cannot fail.
     //
     // The newest box carries the seeded Circle, and the boxes descend.
+    //
+    // **Case-insensitive, and the `i` is load-bearing.** The day label is a
+    // `ds-eyebrow`, which sets `text-transform: uppercase` — and `allInnerTexts`
+    // returns *rendered* text, so "Yesterday" arrives as "YESTERDAY". The
+    // original regex was case-sensitive by accident rather than by intent: this
+    // asserts that the newest box **names** today, yesterday or a date, and
+    // "YESTERDAY" satisfies that completely.
+    //
+    // Worth stating because it generalises: the design system uppercases every
+    // eyebrow, so any assertion on the rendered text of a label is now a
+    // case-insensitive one. `formatDay` returns "Today", "Yesterday" or
+    // "Mon 8 Sep" — all short enough for the token, which is why the token
+    // stayed and this regex moved.
     const headings = await panel.getByTestId("digest-day").locator("h3").allInnerTexts()
     expect(headings).toHaveLength(5)
     expect(headings[0], "the newest box should name today or yesterday").toMatch(
-      /Today|Yesterday|\d/,
+      /Today|Yesterday|\d/i,
     )
 
     // **Scoped to the summary.** The expanded half carries an "Open {name}"

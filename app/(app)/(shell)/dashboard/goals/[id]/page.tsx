@@ -64,13 +64,19 @@ export default async function GoalRecordPage({
     <div className="flex flex-col gap-5">
       <Link
         href={ended ? "/dashboard/goals/archived" : "/dashboard/goals"}
-        className="text-sm underline opacity-70"
+        className="ds-link self-start"
       >
         ← {ended ? "Archived and achieved" : "Goals"}
       </Link>
 
       <section aria-label={`${goal.title} record`} className="flex flex-col gap-1">
-        <h1 className="flex items-center gap-2 text-xl font-semibold">
+        {/*
+          `items-center` on the heading row so the category dot sits on the
+          title's optical centre rather than its top — the dot is 12px against
+          a 20px cap height, so a stretched or baseline default puts it visibly
+          high.
+        */}
+        <h1 className="ds-type-title ds-text-primary flex items-center gap-2">
           <span
             aria-hidden
             className="inline-block size-3 shrink-0 rounded-full"
@@ -78,19 +84,19 @@ export default async function GoalRecordPage({
           />
           {goal.title}
         </h1>
-        <p className="text-sm opacity-70">
+        <p className="ds-type-note ds-text-muted">
           {goal.category ? `${goal.category} · ` : null}
           Started {on(goal.createdAt)}
           {ended ? ` · ${goal.achievedAt ? "achieved" : "archived"} ${on(ended)}` : null}
           {goal.deadline ? ` · deadline ${on(goal.deadline)}` : null}
         </p>
-        <p className="text-sm opacity-70">
+        <p className="ds-text-muted">
           {total === 1 ? "1 day checked off" : `${total} days checked off`}
         </p>
       </section>
 
       {days.length === 0 ? (
-        <p className="text-sm opacity-70">
+        <p className="ds-text-muted">
           {total === 0
             ? "This goal was never checked off."
             : "No days on this page."}
@@ -99,13 +105,13 @@ export default async function GoalRecordPage({
         <>
           <ul aria-label="Check-ins" className="flex flex-col gap-2">
             {days.map((d) => (
-              <li key={d.date} className="flex flex-col gap-2 rounded border px-3 py-2">
-                <span className="text-sm font-medium">{on(d.date)}</span>
+              <li key={d.date} className="ds-panel flex flex-col gap-2 px-3 py-2">
+                <span className="ds-type-label ds-text-primary">{on(d.date)}</span>
 
                 {d.note ? (
                   // `whitespace-pre-wrap`: a note is something you typed, and
                   // the line breaks are part of what you said.
-                  <span className="whitespace-pre-wrap text-sm opacity-80">
+                  <span className="ds-text-primary whitespace-pre-wrap">
                     {d.note}
                   </span>
                 ) : null}
@@ -120,7 +126,7 @@ export default async function GoalRecordPage({
             ))}
           </ul>
 
-          <p className="text-xs opacity-60">
+          <p className="ds-type-note ds-text-muted">
             {/*
               Said once, at the bottom, rather than on every dateless row.
               Somebody scrolling a two-year-old goal should understand why the
@@ -131,16 +137,29 @@ export default async function GoalRecordPage({
           </p>
 
           {(hasMore || pageNumber > 0) && (
-            <nav className="flex justify-between gap-3 text-sm">
+            /*
+              The empty `<span />` on either side is load-bearing:
+              `justify-between` needs two children to push one link to each
+              edge, so a single "Older →" would otherwise sit on the left where
+              "← Newer" belongs. `items-center` keeps the pair level when one
+              wraps.
+            */
+            <nav className="flex items-center justify-between gap-3">
               {pageNumber > 0 ? (
-                <Link href={`/dashboard/goals/${goal.id}?page=${pageNumber - 1}`} className="underline">
+                <Link
+                  href={`/dashboard/goals/${goal.id}?page=${pageNumber - 1}`}
+                  className="ds-link"
+                >
                   ← Newer
                 </Link>
               ) : (
                 <span />
               )}
               {hasMore ? (
-                <Link href={`/dashboard/goals/${goal.id}?page=${pageNumber + 1}`} className="underline">
+                <Link
+                  href={`/dashboard/goals/${goal.id}?page=${pageNumber + 1}`}
+                  className="ds-link"
+                >
                   Older →
                 </Link>
               ) : (

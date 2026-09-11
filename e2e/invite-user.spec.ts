@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test"
 import {
   admin,
+  clearRateLimits,
   createCircleViaApi,
   deleteE2ECircles,
   inviteTokenFor,
@@ -28,6 +29,18 @@ const OWNER = () => requireEnv("E2E_OWNER_EMAIL")
 const JOINER = () => requireEnv("E2E_JOINER_EMAIL")
 /** Only ever a *target*: somebody real who is not in the Circle under test. */
 const ADMIN = () => requireEnv("E2E_ADMIN_EMAIL")
+
+/**
+ * A full budget, the same one `invite.spec.ts` takes.
+ *
+ * This file seeds Circles and invites through them, and both are metered
+ * against the two accounts the whole suite shares. Per file rather than per
+ * run, so no spec has to know what the one before it spent — see
+ * `clearRateLimits`.
+ */
+test.beforeAll(async () => {
+  await clearRateLimits()
+})
 
 test.afterAll(async () => {
   await deleteE2ECircles()

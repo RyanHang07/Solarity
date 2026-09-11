@@ -141,22 +141,29 @@ function Stepper({
   onChange: (next: number) => void
 }) {
   return (
-    <span className="flex items-center gap-2 text-sm">
-      <span className="opacity-70">{label}</span>
+    <span className="flex items-center gap-2">
+      <span className="ds-text-muted">{label}</span>
+      {/*
+        `ds-panel` rather than `ds-cta`: these are steppers, not actions. A
+        stepper that looked like a Save button would compete with everything
+        else on a screen whose only real control is the canvas.
+      */}
       <button
         type="button"
         aria-label={`One fewer ${label}`}
         onClick={() => onChange(Math.max(1, value - 1))}
-        className="rounded border px-2 py-1 text-xs"
+        className="ds-panel ds-text-primary px-2 py-1"
       >
         −
       </button>
-      <output className="w-6 text-center tabular-nums">{value}</output>
+      <output className="ds-text-primary w-6 text-center tabular-nums">
+        {value}
+      </output>
       <button
         type="button"
         aria-label={`One more ${label}`}
         onClick={() => onChange(Math.min(MAX, value + 1))}
-        className="rounded border px-2 py-1 text-xs"
+        className="ds-panel ds-text-primary px-2 py-1"
       >
         +
       </button>
@@ -192,23 +199,29 @@ export function GalaxyLab() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h2 className="text-base font-semibold">Galaxy lab</h2>
-        <p className="text-sm opacity-70">
+        <h2 className="ds-type-heading ds-text-primary">Galaxy lab</h2>
+        <p className="ds-text-muted">
           A fabricated Circle, drawn by the real renderer on this device.{" "}
-          <strong>Nothing is written</strong> — no members, no goals, nothing to
-          clean up.
+          <strong className="ds-text-primary">Nothing is written</strong> — no
+          members, no goals, nothing to clean up.
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 rounded border px-3 py-2">
+      <div className="ds-panel flex flex-wrap items-center gap-4 px-3 py-2">
         <Stepper label="members" value={members} onChange={setMembers} />
         <Stepper label="goals each" value={goals} onChange={setGoals} />
-        <span className="text-sm tabular-nums opacity-70">
+        <span className="ds-text-muted tabular-nums">
           {members * goals} planets
         </span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 rounded border px-3 py-2 text-sm">
+      {/*
+        **Every number here is `tabular-nums`, and on this screen that is the
+        feature.** The readout updates every frame; proportional digits would
+        make the row jitter horizontally while you are trying to read whether
+        the worst frame is climbing.
+      */}
+      <div className="ds-panel ds-text-primary flex flex-wrap items-center gap-4 px-3 py-2">
         <span className="tabular-nums">{fps.toFixed(0)} fps</span>
         {/*
           **The worst frame, in milliseconds, and it is the headline.** 16.7ms is
@@ -222,7 +235,7 @@ export function GalaxyLab() {
         <button
           type="button"
           onClick={resetWorst}
-          className="rounded border px-2 py-1 text-xs opacity-70"
+          className="ds-link ds-type-note"
         >
           Reset worst
         </button>
@@ -249,7 +262,7 @@ export function GalaxyLab() {
         />
       </ViewholeProvider>
 
-      <p className="text-xs opacity-60">
+      <p className="ds-type-note ds-text-muted">
         Expand it, drag it, and step the counts while watching the worst frame.
         The number to write down is the worst frame at ten by ten, on the device
         you expect people to use.

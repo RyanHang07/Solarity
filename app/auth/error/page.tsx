@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { AuthShell } from "@/components/auth/auth-shell"
 import { CONTACT_EMAIL } from "@/lib/legal"
 
 export const metadata = { title: "Sign-in problem — Solarity" }
@@ -43,33 +44,48 @@ export default async function AuthErrorPage({
   const known = reason ? KNOWN[reason] : undefined
 
   return (
-    <main className="flex min-h-full flex-1 flex-col items-center justify-center gap-4 p-8">
-      <div className="flex w-full max-w-sm flex-col gap-3 rounded border px-4 py-5">
-        <h1 className="text-xl font-semibold">
-          {known?.title ?? "Couldn't sign you in"}
-        </h1>
+    /*
+      **Not `ds-text-danger`, on the one auth screen that could argue for it.**
+      Every reason this page renders is recoverable and none is the visitor's
+      fault — an expired link, a mail client that trimmed a URL. Colouring the
+      title as an alarm would make a routine "ask for another one" read as a
+      broken account, which is the opposite of what the copy says.
 
-        {known ? (
-          <p className="text-sm opacity-70">{known.body}</p>
-        ) : reason ? (
-          <p className="text-sm opacity-70">{reason}</p>
-        ) : null}
+      The footer stays: somebody who cannot sign in is exactly who needs the
+      Support link, and this is the screen they are stuck on.
+    */
+    <AuthShell>
+      <h1 className="ds-type-title ds-text-primary">
+        {known?.title ?? "Couldn't sign you in"}
+      </h1>
 
-        <Link
-          href={known?.retryHref ?? "/auth/sign-in"}
-          className="self-start rounded border px-4 py-2 text-sm font-medium"
-        >
-          {known?.retry ?? "Try again"}
-        </Link>
+      {known ? (
+        <p className="ds-type-note ds-text-muted">{known.body}</p>
+      ) : reason ? (
+        <p className="ds-type-note ds-text-muted">{reason}</p>
+      ) : null}
 
-        <p className="text-xs opacity-60">
-          Still stuck? Write to{" "}
-          <a href={`mailto:${CONTACT_EMAIL}`} className="underline">
-            {CONTACT_EMAIL}
-          </a>
-          .
-        </p>
-      </div>
-    </main>
+      {/*
+        A link styled as the primary action. `ds-cta` is a class rather than a
+        component for exactly this: the control is a navigation, so it has to be
+        an `<a>`, and wrapping a `<button>` in a `<Link>` would be a button that
+        is not one.
+      */}
+      <Link
+        href={known?.retryHref ?? "/auth/sign-in"}
+        className="ds-cta ds-bg-flame ds-text-on-light ds-type-label self-start px-4 py-2.5"
+        style={{ ["--ds-cta-min" as string]: "auto" }}
+      >
+        {known?.retry ?? "Try again"}
+      </Link>
+
+      <p className="ds-type-note ds-text-muted">
+        Still stuck? Write to{" "}
+        <a href={`mailto:${CONTACT_EMAIL}`} className="ds-link">
+          {CONTACT_EMAIL}
+        </a>
+        .
+      </p>
+    </AuthShell>
   )
 }

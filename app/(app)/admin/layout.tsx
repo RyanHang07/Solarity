@@ -30,19 +30,19 @@ export default async function AdminLayout({
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
-        <h1 className="text-xl font-semibold">Admin</h1>
-        <nav className="flex gap-4 text-sm">
-          <Link href="/admin" className="underline opacity-70">
+      <header className="ds-border-oatmeal flex flex-wrap items-center justify-between gap-3 border-b pb-3">
+        <h1 className="ds-type-title ds-text-primary">Admin</h1>
+        <nav className="flex flex-wrap items-center gap-4">
+          <Link href="/admin" className="ds-link">
             Reports
           </Link>
-          <Link href="/admin/people" className="underline opacity-70">
+          <Link href="/admin/people" className="ds-link">
             Administrators
           </Link>
-          <Link href="/admin/galaxy-lab" className="underline opacity-70">
+          <Link href="/admin/galaxy-lab" className="ds-link">
             Galaxy lab
           </Link>
-          <Link href="/dashboard" className="underline opacity-70">
+          <Link href="/dashboard" className="ds-link">
             Back to the app
           </Link>
         </nav>

@@ -3,18 +3,32 @@
 import { useActionState, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { blockUser, reportContent } from "@/app/actions/moderation"
+import { SecondaryButton } from "@/components/ui/button"
+import { FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
 
+/**
+ * **Danger-outlined rather than flame-filled, for both Block and Send report.**
+ * Neither is the thing the screen wants you to do — a profile exists to be
+ * read — so neither gets the primary. `ds-border-danger` wins over `ds-panel`'s
+ * own border because the panel's is `:where()`d, which is the whole reason that
+ * fix exists.
+ *
+ * The accessible name is untouched: `moderation.spec.ts` clicks
+ * `{ name: "Block", exact: true }`, and `exact` is what keeps it from also
+ * matching the "Block &lt;username&gt;" trigger that opens this confirm.
+ */
 function Submit({ label, pendingLabel }: { label: string; pendingLabel: string }) {
   const { pending } = useFormStatus()
   return (
-    <button
+    <SecondaryButton
       type="submit"
       disabled={pending}
-      className="rounded border border-red-600 px-3 py-2 text-sm font-medium text-red-600 disabled:opacity-50"
+      align="center"
+      className="ds-border-danger ds-text-danger"
     >
       {pending ? pendingLabel : label}
-    </button>
+    </SecondaryButton>
   )
 }
 
@@ -57,11 +71,14 @@ export function ProfileActions({
   const [reporting, setReporting] = useState(false)
 
   return (
-    <section aria-label="Moderation" className="flex flex-col gap-3 border-t pt-6">
+    <section
+      aria-label="Moderation"
+      className="ds-border-oatmeal flex flex-col gap-3 border-t pt-6"
+    >
       {/* ------------------------------------------------------------ block */}
       {confirmingBlock ? (
-        <div className="flex flex-col gap-2 rounded border border-red-600 px-3 py-2">
-          <p className="text-sm">
+        <div className="ds-panel ds-border-danger flex flex-col gap-2 px-3 py-2">
+          <p className="ds-text-primary">
             Block <strong>{username}</strong>?
           </p>
           {/*
@@ -69,12 +86,16 @@ export function ProfileActions({
             from a shared Circle would find out otherwise by opening it, which
             is a worse way to learn than reading it here.
           */}
-          <p className="text-xs opacity-70">
+          <p className="ds-type-note ds-text-muted">
             Neither of you will see the other&apos;s profile. You&apos;ll still
             see each other in any Circle you share, and they won&apos;t be told.
             You can undo this in settings.
           </p>
-          <div className="flex gap-2">
+          {/*
+            `items-center`, because the confirm is a button beside a text link
+            and the flex default would stretch the link to the button's height.
+          */}
+          <div className="flex items-center gap-2">
             <form action={blockAction}>
               <input type="hidden" name="userId" value={userId} />
               <Submit label="Block" pendingLabel="Blocking…" />
@@ -82,18 +103,30 @@ export function ProfileActions({
             <button
               type="button"
               onClick={() => setConfirmingBlock(false)}
-              className="rounded px-3 py-2 text-sm underline opacity-70"
+              className="ds-link"
             >
               Cancel
             </button>
           </div>
         </div>
       ) : (
-        <div className="flex gap-4">
+        /*
+          Both stay quiet links rather than buttons. A profile exists to be
+          read; these are the two things you do when reading it has gone wrong,
+          and drawing them as controls would make every profile look like a
+          moderation queue.
+
+          Plain `/* *​/`, not `{/* *​/}`: this is the `else` arm of a ternary,
+          which is an expression position — the same slot as after `return (`.
+          Braces there parse as a block. Second time this has bitten in the
+          port, and the first sweep missed it because it only looked at
+          `return (` and `=> (`.
+        */
+        <div className="flex flex-wrap items-center gap-4">
           <button
             type="button"
             onClick={() => setConfirmingBlock(true)}
-            className="text-sm underline opacity-70"
+            className="ds-link"
           >
             Block {username}
           </button>
@@ -102,7 +135,7 @@ export function ProfileActions({
             <button
               type="button"
               onClick={() => setReporting(true)}
-              className="text-sm underline opacity-70"
+              className="ds-link"
             >
               Report this profile
             </button>
@@ -112,7 +145,7 @@ export function ProfileActions({
 
       {/* ----------------------------------------------------------- report */}
       {reporting && !confirmingBlock ? (
-        <form action={reportAction} className="flex flex-col gap-2 rounded border px-3 py-2">
+        <form action={reportAction} className="ds-panel flex flex-col gap-2 px-3 py-2">
           <input type="hidden" name="userId" value={userId} />
           <input type="hidden" name="contentType" value="user_profile" />
           {/*
@@ -123,7 +156,7 @@ export function ProfileActions({
           */}
           <input type="hidden" name="contentReference" value={userId} />
 
-          <label htmlFor="report-reason" className="text-sm">
+          <label htmlFor="report-reason" className="ds-type-label ds-text-muted">
             What&apos;s wrong with this profile?
           </label>
           <textarea
@@ -131,18 +164,18 @@ export function ProfileActions({
             name="reason"
             rows={3}
             maxLength={500}
-            className="rounded border px-3 py-2 text-sm"
+            className="ds-field"
           />
-          <p className="text-xs opacity-60">
+          <p className="ds-type-note ds-text-muted">
             Optional, up to 500 characters. Reports are read by a person, and{" "}
             {username} isn&apos;t told who reported them.
           </p>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Submit label="Send report" pendingLabel="Sending…" />
             <button
               type="button"
               onClick={() => setReporting(false)}
-              className="rounded px-3 py-2 text-sm underline opacity-70"
+              className="ds-link"
             >
               Cancel
             </button>
@@ -154,17 +187,13 @@ export function ProfileActions({
         // **Says it was received, not what will happen.** There is no
         // moderation console yet, so a promise about review would be one the
         // product cannot keep.
-        <p role="status" className="text-sm">
+        <p role="status" className="ds-text-primary">
           Report sent. Thanks — someone will look at it.
         </p>
       ) : null}
 
       {[blockState, reportState].map((st, i) =>
-        st && !st.ok ? (
-          <p key={i} role="alert" className="text-sm text-red-600">
-            {st.error}
-          </p>
-        ) : null,
+        st && !st.ok ? <FormError key={i}>{st.error}</FormError> : null,
       )}
     </section>
   )

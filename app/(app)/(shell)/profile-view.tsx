@@ -18,8 +18,13 @@ import type { Profile } from "@/app/actions/profile"
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-2xl font-semibold tabular-nums">{value}</span>
-      <span className="text-xs opacity-70">{label}</span>
+      {/*
+        `ds-type-metric` carries `tabular-nums` itself — it was the reason the
+        token exists — so the hand-written one goes. Four stats side by side is
+        exactly the case: 9 → 10 must not shift the label under it.
+      */}
+      <span className="ds-type-metric ds-text-flame">{value}</span>
+      <span className="ds-type-note ds-text-muted">{label}</span>
     </div>
   )
 }
@@ -49,11 +54,11 @@ export function ProfileView({
             unique**. On a page whose whole job is to say who someone is, the
             unique one leads.
           */}
-          <h1 className="text-xl font-semibold">{profile.username}</h1>
+          <h1 className="ds-type-title ds-text-primary">{profile.username}</h1>
           {profile.displayName ? (
-            <p className="text-sm opacity-70">{profile.displayName}</p>
+            <p className="ds-text-muted">{profile.displayName}</p>
           ) : null}
-          <p className="text-xs opacity-60">
+          <p className="ds-type-note ds-text-muted">
             {/*
               **UTC-pinned**, like every other date in this app. `member_since`
               is a real instant rather than a check-in date, but formatting it
@@ -83,7 +88,7 @@ export function ProfileView({
         // a false one about somebody who simply has not shared. The distinction
         // costs one sentence and is the difference between withholding and
         // lying.
-        <p className="text-sm opacity-70">
+        <p className="ds-text-muted">
           {profile.username} hasn&apos;t shared their stats.
         </p>
       )}

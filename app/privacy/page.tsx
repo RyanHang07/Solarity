@@ -56,7 +56,7 @@ export default function PrivacyPage() {
           </a>
           .
         </p>
-        <p className="opacity-70">
+        <p className="ds-text-muted">
           You must be {MINIMUM_AGE} or older to use Solarity.
         </p>
       </PolicySection>
@@ -100,7 +100,7 @@ export default function PrivacyPage() {
               address over — but "who else touches it" is exactly the question
               this page exists to answer.
             */}
-            <span className="opacity-70">
+            <span className="ds-text-muted">
               That address belongs to your browser&apos;s own push service —
               Apple, Google or Mozilla — so sending you a notification means
               contacting them.
@@ -122,7 +122,7 @@ export default function PrivacyPage() {
           rather than expecting notice. Both are fixed in the same commit,
           which is the rule this page sets for itself.
         */}
-        <p className="opacity-70">
+        <p className="ds-text-muted">
           There is no analytics, no advertising, and no tracking across other
           sites. Solarity does not sell anything about you. The only email it
           sends is about your account — confirming your address and resetting
@@ -159,7 +159,7 @@ export default function PrivacyPage() {
             record when somebody posts something they should not have.
           </li>
         </ul>
-        <p className="opacity-70">
+        <p className="ds-text-muted">
           Nothing here is processed for advertising, profiling or any automated
           decision about you. There is no such system to opt out of.
         </p>
@@ -234,7 +234,7 @@ export default function PrivacyPage() {
           dashboard cannot delete your content or suspend your account; anything
           of that kind is done by hand and would be a separate decision.
         </p>
-        <p className="opacity-70">
+        <p className="ds-text-muted">
           {/*
             Named plainly rather than left to inference. "An administrator" in a
             product run by one person means that person, and someone deciding
@@ -285,7 +285,7 @@ export default function PrivacyPage() {
             <li key={item}>{item}</li>
           ))}
         </ul>
-        <p className="opacity-70">
+        <p className="ds-text-muted">
           {/*
             Named rather than left as "and some other things". A person checking
             whether they got everything can only do that against a list, and the
@@ -410,7 +410,7 @@ export default function PrivacyPage() {
           you have already seen today&apos;s check-in screen, and remember that
           you dismissed a prompt.
         </p>
-        <p className="opacity-70">
+        <p className="ds-text-muted">
           There are no advertising or analytics cookies, and nothing here follows
           you to another site. That is also why Solarity has no cookie banner:
           there is nothing to consent to.
@@ -441,7 +441,7 @@ export default function PrivacyPage() {
           one person, not a team with a rota, which is exactly why it is written
           down here.
         </p>
-        <p className="opacity-70">
+        <p className="ds-text-muted">
           No system is perfect, and this one is early. If you find something
           wrong, please write.
         </p>
@@ -451,7 +451,7 @@ export default function PrivacyPage() {
         <p>
           If this changes in a way that matters, the date at the top changes.
         </p>
-        <p className="opacity-70">
+        <p className="ds-text-muted">
           {/*
             **The conclusion survived two rewrites; the reasoning did not.**
             It first promised notice in the app before a change took effect,

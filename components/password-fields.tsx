@@ -91,8 +91,21 @@ export function PasswordFields({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1 text-sm">
-        <label htmlFor={passwordId}>{label}</label>
+      {/*
+        **Still hand-rolled rather than built on `Field`, and deliberately.**
+        `Field` renders one hint; this renders a hint *and* a conditional
+        problem, and composes the two ids in a specific order so a screen reader
+        reads the rule before the violation. Passing that through a prop would
+        make `Field` the union of every field anyone ever needs, which is how a
+        component library stops being one.
+
+        What it does take from `Field` is the shape — label, control, note — and
+        the tokens, so the two are indistinguishable on screen.
+      */}
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor={passwordId} className="ds-type-label ds-text-muted">
+          {label}
+        </label>
         <input
           id={passwordId}
           type={reveal ? "text" : "password"}
@@ -106,20 +119,22 @@ export function PasswordFields({
             touched && problem ? `${hintId} ${problemId}` : hintId
           }
           aria-invalid={(touched && problem !== null) || undefined}
-          className="rounded border px-3 py-2"
+          className="ds-field"
         />
-        <span id={hintId} className="text-xs opacity-60">
+        <span id={hintId} className="ds-type-note ds-text-muted">
           {PASSWORD_HINT}
         </span>
         {touched && problem ? (
-          <span id={problemId} className="text-xs text-red-600">
+          <span id={problemId} className="ds-type-note ds-text-danger">
             {problem}
           </span>
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-1 text-sm">
-        <label htmlFor={confirmId}>Confirm password</label>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor={confirmId} className="ds-type-label ds-text-muted">
+          Confirm password
+        </label>
         <input
           id={confirmId}
           type={reveal ? "text" : "password"}
@@ -133,15 +148,20 @@ export function PasswordFields({
             confirmTouched && mismatch ? mismatchId : undefined
           }
           aria-invalid={(confirmTouched && mismatch) || undefined}
-          className="rounded border px-3 py-2"
+          className="ds-field"
         />
         {confirmTouched && mismatch ? (
-          <span id={mismatchId} className="text-xs text-red-600">
+          <span id={mismatchId} className="ds-type-note ds-text-danger">
             These don&apos;t match.
           </span>
         ) : null}
       </div>
 
+      {/*
+        `ds-link` rather than a bare underline, and `self-start` so it stays the
+        width of its own words. The reveal is the one control here that is not
+        part of the form's data, so it should not look like a field.
+      */}
       <button
         type="button"
         onClick={() => setReveal((r) => !r)}
@@ -149,7 +169,7 @@ export function PasswordFields({
         // then announces the state of a toggle instead of a button whose name
         // keeps changing under it.
         aria-pressed={reveal}
-        className="self-start text-xs underline opacity-70"
+        className="ds-link ds-type-note self-start"
       >
         {reveal ? "Hide password" : "Show password"}
       </button>

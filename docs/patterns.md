@@ -1,10 +1,10 @@
 # Solarity: Bug Patterns & Standing Checks
 
-Every real bug found so far fell into one of **forty-nine shapes**. Probe for these after any change. The list earns its keep: the last three sessions each found a defect by walking it rather than by a test failing, and the count is checked against the table rather than remembered — it read "twenty-seven" for a fortnight while the table held forty.
+Every real bug found so far fell into one of **fifty-one shapes**. Probe for these after any change. The list earns its keep: the last three sessions each found a defect by walking it rather than by a test failing, and the count is checked against the table rather than remembered — it read "twenty-seven" for a fortnight while the table held forty, and "forty-nine" again on 11 September while the table held fifty-one. **This sentence is the third time that number has been wrong**, which is the argument for counting rather than recalling.
 
 ---
 
-## The forty-nine shapes
+## The fifty-one shapes
 
 ### Schema-shaped — all found in SQL
 
@@ -86,6 +86,8 @@ Every real bug found so far fell into one of **forty-nine shapes**. Probe for th
 | **A cleanup that reads the state it is cleaning up** | `job_scrub_and_list_user_media` deleted the avatar object only `where avatar_url is not null`, and "Remove picture" clears the column while deliberately keeping the object. Both defensible alone; together, **removing your picture and then deleting your account left the photograph in Storage**. Neither file was wrong when it was written. **A deletion path must derive what it deletes, never ask permission of the state it is deleting** — the key is deterministic, so migration 89 builds it from the user id |
 | **A cast standing in for a check** | `contentType as ReportType` on a string straight off a form. The type system was told a fact nobody had established; an unrecognised value reached Postgres as `22P02`, a code with no copy, and surfaced as "Something went wrong." A cast on external input is a `// trust me` with syntax highlighting |
 | **A text column with no CHECK, filled by a client** | `content_reports.content_reference` is `not null` text with no length constraint, so a report could carry a megabyte. `reason` had a 500-character CHECK; the column beside it had nothing. **Ask of every client-writable column: what stops this being enormous?** |
+| **`security invoker` on a function that reads a table the caller cannot** | `public.users` is withheld from `authenticated` so nothing reads it unmasked; `export_user_data` was written invoker-side so it is "structurally incapable of returning anyone else's rows". Each is right alone. Together the export raised `42501` on its first block for every caller and **had never worked once**. Nothing noticed, because `lib/errors.ts` renders a bare 42501 identically to the function's own not-authenticated guard, and no test called it. Migration 113. **An error message that collapses two causes into one sentence is a debugging trap** |
+| **A `loading.tsx` on a route that redirects, or holds a client-component form** | Adding one to `/join/[token]` made the route stream. The page's `redirect()` for a dead token stopped being a server redirect and became a *client-side navigation* after the shell had painted, and the gap between paint and hydration widened enough that a click on the Join form did nothing. Two specs caught it; a person would have seen a skeleton flash then bounce, on the first screen they ever see. **`loading.tsx` changes *when* things happen, and both changes are invisible until something races** |
 
 **Three related traps, all hit while fixing the above:**
 

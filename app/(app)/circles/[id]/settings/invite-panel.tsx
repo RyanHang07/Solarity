@@ -1,5 +1,7 @@
 "use client"
 
+import { SecondaryButton } from "@/components/ui/button"
+import { FormError } from "@/components/ui/field"
 import { useActionState, useState, useSyncExternalStore } from "react"
 import { useFormStatus } from "react-dom"
 import { generateInviteLink, revokeInviteLink } from "@/app/actions/invites"
@@ -16,15 +18,19 @@ function Submit({
 }) {
   const { pending } = useFormStatus()
   return (
-    <button
+    /*
+      Secondary either way. Generating a link and revoking one are both
+      administrative rather than the thing the screen wants you to do, and a
+      flame button on a settings page competes with Save.
+    */
+    <SecondaryButton
       type="submit"
       disabled={pending}
-      className={`rounded border px-3 py-2 text-sm font-medium disabled:opacity-50 ${
-        danger ? "border-red-600 text-red-600" : ""
-      }`}
+      align="center"
+      className={danger ? "ds-border-danger ds-text-danger" : ""}
     >
       {pending ? pendingLabel : label}
-    </button>
+    </SecondaryButton>
   )
 }
 
@@ -105,36 +111,48 @@ export function InvitePanel({
   return (
     <section className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold">Invite link</h2>
-        <p className="text-sm opacity-70">
+        <h2 className="ds-type-heading ds-text-primary">Invite link</h2>
+        <p className="ds-text-muted">
           Anyone with this link can join, so treat it like a password. One link
           is live at a time.
         </p>
       </div>
 
       {url ? (
-        <div className="flex flex-col gap-2 rounded border px-3 py-2">
-          <code className="overflow-x-auto text-sm">{url}</code>
+        <div className="ds-panel flex flex-col gap-2 px-3 py-2">
+          {/*
+            `ds-font-mono` on the token itself. It is a string somebody reads
+            character by character when something has gone wrong, and a
+            proportional face makes that harder for no gain.
+          */}
+          <code className="ds-font-mono ds-text-primary overflow-x-auto text-[0.8125rem]">
+            {url}
+          </code>
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={copy}
-              className="rounded border px-3 py-2 text-sm font-medium"
-            >
+            <SecondaryButton onClick={copy} align="center">
               {copied ? "Copied" : "Copy link"}
-            </button>
+            </SecondaryButton>
 
             <form action={revokeAction}>
               <input type="hidden" name="groupId" value={groupId} />
               <Submit label="Revoke" pendingLabel="Revoking…" danger />
             </form>
           </div>
-          <p className={`text-xs ${expired ? "text-red-600" : "opacity-60"}`}>
+          {/*
+            Colour is not the only signal — "Expired" is in the text — but an
+            expired link is the one state on this panel worth catching from
+            across the page.
+          */}
+          <p
+            className={`ds-type-note ${
+              expired ? "ds-text-danger" : "ds-text-muted"
+            }`}
+          >
             {formatExpiry(expiresAt)}
           </p>
         </div>
       ) : (
-        <p className="text-sm opacity-70">
+        <p className="ds-text-muted">
           No live link. Generate one to invite people.
         </p>
       )}
@@ -142,22 +160,18 @@ export function InvitePanel({
       {/* Revoking leaves no link, so the button below becomes a plain create
           again. The warning only applies when there is something to destroy. */}
       {token && !confirmRegen ? (
-        <button
-          type="button"
-          onClick={() => setConfirmRegen(true)}
-          className="self-start rounded border px-3 py-2 text-sm font-medium"
-        >
+        <SecondaryButton onClick={() => setConfirmRegen(true)}>
           Generate a new link
-        </button>
+        </SecondaryButton>
       ) : null}
 
       {token && confirmRegen ? (
-        <div className="flex flex-col gap-2 rounded border border-red-600 px-3 py-2">
-          <p className="text-sm">
+        <div className="ds-panel ds-border-danger flex flex-col gap-2 px-3 py-2">
+          <p className="ds-text-primary">
             This turns off the link above. Anyone still holding it, in a group
             chat or an old message, won&apos;t be able to join.
           </p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <form action={genAction}>
               <input type="hidden" name="groupId" value={groupId} />
               <Submit label="Replace it" pendingLabel="Generating…" danger />
@@ -165,7 +179,7 @@ export function InvitePanel({
             <button
               type="button"
               onClick={() => setConfirmRegen(false)}
-              className="rounded px-3 py-2 text-sm underline opacity-70"
+              className="ds-link"
             >
               Keep the current link
             </button>
@@ -180,11 +194,7 @@ export function InvitePanel({
         </form>
       ) : null}
 
-      {error ? (
-        <p role="alert" className="text-sm text-red-600">
-          {error}
-        </p>
-      ) : null}
+      {error ? <FormError>{error}</FormError> : null}
     </section>
   )
 }

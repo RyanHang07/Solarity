@@ -39,9 +39,12 @@ Build phases and the screen inventory are in `product-and-design.md`. **The gala
 
 ```
 app/
-  (app)/            signed-in screens; layout.tsx is the username + terms gate
-    (shell)/        the five tabbed sections; layout.tsx owns the bar, the /today
-                    gate and the first-goal gate
+  (app)/            signed-in screens. layout.tsx is the username + terms gate
+                    **and owns the navigation** — the desktop bar, the mobile
+                    tab bar and the unread count. not-found.tsx here keeps the
+                    chrome; the root one does not
+    (shell)/        the five tabbed sections. layout.tsx is the /today gate and
+                    the first-goal gate, and nothing else
       dashboard/    Overview, circles/, notifications/, goals/
       profile/      your own, and [username]/
     admin/          the back office, incl. galaxy-lab/. 404 unless private.is_admin()
@@ -56,8 +59,20 @@ app/
   onboarding/       username + timezone, then terms/, goal/, install/,
                     notifications/ — five screens, each a destination of a gate
   privacy/, terms/, support/   the public pages
+  not-found.tsx     the signed-out 404. `(app)/not-found.tsx` is the signed-in
+                    one; two files, because a not-found inside a route group
+                    renders within that group's layout
+  design-system.css the tokens. Imported by globals.css, not by Tailwind
   manifest.ts       web app manifest
-components/         client components shared across route groups
+components/
+  auth/             AuthShell, GoogleButton
+  landing/          the five-act landing and its canvas hero. Cloned from the
+                    catalog by scripts/port-landing.mjs
+  marks/            the SVG glyphs and the corner/tick accents
+  onboarding/       OnboardingShell
+  shell/            AppNavDesktop, AppNavMobile
+  ui/               Panel, Field, Select, Checkbox, RadioGroup, the two buttons
+  …                 plus the client components shared across route groups
 lib/
   avatar.ts         crop, re-encode, the fixed key
   digest-days.ts    grouping, ordering, UTC-pinned dates — pure, unit-tested
@@ -83,7 +98,9 @@ proxy.ts            session refresh + anonymous redirect + the nonce CSP
 next.config.ts      the headers with no per-request component
 ```
 
-**Where the design pass will spend its time.** `components/` is the shared layer and the one worth restyling first, because every route group renders it. `lib/galaxy/` is deliberately not part of that: it draws to a canvas, takes its one colour from `--galaxy-sky` in `globals.css`, and has no Tailwind in it at all.
+**The design system is a plain stylesheet, not Tailwind utilities.** `app/design-system.css` holds ~50 `ds-*` classes and is imported by `globals.css`. That is deliberate: Tailwind's production purge is the one thing that can differ between `next dev` and `next build`, and a token that exists only in a class string is a token the purge can decide it does not need. `scripts/design-audit.mjs` checks that every `ds-*` used in the app is defined, and that every CSS variable the stylesheet reads is defined somewhere — including by `next/font`, which is the seam Fraunces fell through when the CSS was copied between repos without the font declaration.
+
+**`lib/galaxy/` is deliberately outside the system.** It draws to a canvas, takes its one colour from `--galaxy-sky` in `globals.css`, and has no Tailwind in it at all. The card *around* it is the app's (`ds-card`); the sky inside it is the module's, and on-sky chrome keeps the module's palette because it is measured against the canvas rather than the abyss.
 
 ### The signed-in gates, in order, and they live at two levels
 
@@ -95,7 +112,7 @@ next.config.ts      the headers with no per-request component
 !profile.terms_accepted_at  → /onboarding/terms
 ```
 
-`app/(app)/(shell)/layout.tsx`, which is the five tabbed sections only:
+`app/(app)/(shell)/layout.tsx`, which is the five tabbed sections only. **It used to own the navigation as well**; the design pass moved the bar and the unread count up to `(app)` so `/today`, `/settings` and `/circles/[id]` render inside the same chrome as everything else, which is what stopped the app losing its header on four routes:
 
 ```
 never created a goal        → /onboarding/goal
@@ -450,8 +467,15 @@ Two caps apply and they are independent. Brevo allows 300/day; Supabase separate
 
 ### Icons
 
+**The artwork is `SunMark` in `--ds-burning-flame` on `--ds-abyss`**, and the SVG
+masters are the source. The PNGs are rasterised from them.
+
 | File | Size | Notes |
 |---|---|---|
+| `app/icon.svg` | vector | The favicon. Next serves it and writes the `<link>` itself. |
+| `public/icons/icon.svg` | vector | Master for the `any` PNGs. A separate file so regenerating them never touches the favicon. |
+| `public/icons/icon-maskable.svg` | vector | Master for the maskable PNG. Mark at `scale(3.2)` where the others use `scale(4)`. |
+| `public/icons/badge.svg` | vector | Master for the badge. |
 | `public/icons/icon-192.png` | 192×192 | manifest, `purpose: any` |
 | `public/icons/icon-512.png` | 512×512 | manifest, splash screen source |
 | `public/icons/icon-512-maskable.png` | 512×512 | `purpose: maskable`. Artwork inside the centre 80% circle so Android can crop to any shape. |
@@ -459,7 +483,13 @@ Two caps apply and they are independent. Brevo allows 300/day; Supabase separate
 | `app/apple-icon.png` | 180×180 | iOS home screen. Opaque, square, no transparency and no pre-rounded corners: iOS applies the mask. Next.js serves it from `app/` automatically. |
 | `app/favicon.ico` | multi-size | 16/32/48/64/256 in one file. |
 
-Current set is a placeholder sun mark generated programmatically: correct dimensions, replaceable in v2.
+**Three rules the masters encode, each of which is a way to get this wrong:**
+
+- **The hexes are inlined.** `components/marks/marks.tsx` says nothing there hardcodes a hex, and inside the app that is right: a mark inherits `currentColor`. **No cascade reaches a standalone asset**, so `var(--ds-abyss)` in a favicon resolves to nothing and the hollow centre punches a hole through the icon.
+- **Maskable is drawn smaller.** Android guarantees only the centre 80% survives its crop, and the background must bleed to the full square or the launcher's own backdrop shows through.
+- **The badge is white on transparent with the centre cut out.** Android masks by alpha and tints the result, so a badge drawn on the abyss arrives as a solid tinted square with the sun ghosted into it.
+
+**The six raster files are still the old placeholder mark**, correct in dimensions and wrong in artwork. Rasterising them is an open item in `../build-plan.md`; it needs an image tool and deliberately adds no dependency.
 
 ### Other standing config
 

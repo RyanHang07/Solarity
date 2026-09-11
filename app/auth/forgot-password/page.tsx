@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { LegalFooter } from "@/components/legal-footer"
+import { AuthShell } from "@/components/auth/auth-shell"
 import { createClient } from "@/lib/supabase/server"
 import { ForgotForm } from "./forgot-form"
 
@@ -33,29 +33,30 @@ export default async function ForgotPasswordPage() {
   if (user) redirect("/dashboard")
 
   return (
-    <main className="flex min-h-full flex-1 flex-col items-center justify-center gap-6 p-8">
-      <div className="flex w-full max-w-sm flex-col gap-4 rounded border px-4 py-5">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold">Reset your password</h1>
-          <p className="text-sm opacity-70">
-            Tell us your email address and we&apos;ll send you a link to set a
-            new one.
-          </p>
-        </div>
-
-        <ForgotForm />
-
-        <p className="border-t pt-4 text-xs opacity-60">
-          If you signed in with Google, there&apos;s no password to reset — use
-          the Google button on the{" "}
-          <Link href="/auth/sign-in" className="underline">
-            sign-in page
-          </Link>
-          .
+    <AuthShell>
+      <div className="flex flex-col gap-1.5">
+        <h1 className="ds-type-title ds-text-primary">Reset your password</h1>
+        <p className="ds-type-note ds-text-muted">
+          Tell us your email address and we&apos;ll send you a link to set a new
+          one.
         </p>
       </div>
 
-      <LegalFooter />
-    </main>
+      <ForgotForm />
+
+      {/*
+        The Google sentence keeps its hairline. It is not a footnote to the
+        form — it is the only thing that reaches somebody who will otherwise
+        request a link, receive nothing, and conclude the product is broken.
+      */}
+      <p className="ds-border-oatmeal ds-type-note ds-text-muted border-t pt-4">
+        If you signed in with Google, there&apos;s no password to reset — use
+        the Google button on the{" "}
+        <Link href="/auth/sign-in" className="ds-link">
+          sign-in page
+        </Link>
+        .
+      </p>
+    </AuthShell>
   )
 }

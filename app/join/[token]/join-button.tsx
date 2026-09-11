@@ -3,18 +3,26 @@
 import { useActionState } from "react"
 import { useFormStatus } from "react-dom"
 import { joinCircle } from "@/app/actions/join"
+import { PrimaryButton } from "@/components/ui/button"
+import { FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
 
+/**
+ * **The one primary button on the page, and the only screen where that is
+ * unambiguous.** Somebody arriving on an invite link came here to do exactly
+ * one thing.
+ *
+ * The label carries the Circle's name — `Join Morning crew`, not `Join`. Four
+ * specs locate it that way, and it is also the honest label: a bare "Join"
+ * beside a preview of a Circle you have never heard of asks you to commit to a
+ * noun you have to scroll up to find.
+ */
 function Submit({ circleName }: { circleName: string }) {
   const { pending } = useFormStatus()
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="rounded border px-4 py-2 text-sm font-medium disabled:opacity-50"
-    >
+    <PrimaryButton type="submit" disabled={pending} full>
       {pending ? "Joining…" : `Join ${circleName}`}
-    </button>
+    </PrimaryButton>
   )
 }
 
@@ -44,11 +52,7 @@ export function JoinButton({
       <input type="hidden" name="token" value={token} />
       <Submit circleName={circleName} />
 
-      {state && !state.ok ? (
-        <p role="alert" className="text-sm text-red-600">
-          {state.error}
-        </p>
-      ) : null}
+      {state && !state.ok ? <FormError>{state.error}</FormError> : null}
     </form>
   )
 }

@@ -27,10 +27,21 @@ export function StreakHeader({
   if (streak > 0) {
     return (
       <header className="flex flex-col gap-1">
-        <p className="text-2xl font-semibold">
+        {/*
+          **`ds-type-metric`, and `tabular-nums` is the reason rather than the
+          size.** 9 → 10 must not shove the word beside it sideways, and every
+          screen that shows a count had discovered that independently.
+
+          Flame, because on this screen the number *is* the subject. The other
+          two states below use the same token deliberately: they occupy the same
+          slot, and a heading that changes size between "14 days" and "Day one"
+          makes the page jump on the day a streak breaks — which is the worst
+          possible day for the layout to move.
+        */}
+        <p className="ds-type-metric ds-text-flame">
           {streak} day{streak === 1 ? "" : "s"}
         </p>
-        <p className="text-sm opacity-70">
+        <p className="ds-text-muted">
           {streakIncludesToday
             ? "Today is counted. Everything below is done."
             : "Finish today's goals to keep it going."}
@@ -42,8 +53,8 @@ export function StreakHeader({
   if (broken) {
     return (
       <header className="flex flex-col gap-1">
-        <p className="text-2xl font-semibold">Start again</p>
-        <p className="text-sm opacity-70">
+        <p className="ds-type-metric ds-text-primary">Start again</p>
+        <p className="ds-text-muted">
           Your {broken.length} day{broken.length === 1 ? "" : "s"} run ended on{" "}
           {formatDay(broken.endedOn)}. Today is day one of the next one.
         </p>
@@ -53,8 +64,8 @@ export function StreakHeader({
 
   return (
     <header className="flex flex-col gap-1">
-      <p className="text-2xl font-semibold">Day one</p>
-      <p className="text-sm opacity-70">
+      <p className="ds-type-metric ds-text-primary">Day one</p>
+      <p className="ds-text-muted">
         Check off everything below and your streak starts today.
       </p>
     </header>

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test"
-import { admin, requireEnv, userIdByEmail } from "./db"
+import { admin, clearRateLimits, requireEnv, userIdByEmail } from "./db"
 import { errorAlert } from "./ui"
 import { MIN_PASSWORD_LENGTH } from "@/lib/password"
 import { TERMS_VERSION } from "@/lib/legal"
@@ -25,6 +25,30 @@ import { TERMS_VERSION } from "@/lib/legal"
  * per run so a leaked account from a crashed run cannot make the next one pass
  * or fail for the wrong reason.
  */
+
+/**
+ * **A full budget, because this file spends the two tightest IP-keyed limits.**
+ *
+ * Five `Create account` submissions against `signUp` (10/hour) and two reset
+ * requests against `passwordReset` (5/hour), both keyed by client IP — and
+ * `lib/ratelimit.ts` records that localhost sends no `x-forwarded-for`, so every
+ * request in a local run shares one bucket. **Two runs inside an hour exhaust
+ * both**, before Playwright retries are counted.
+ *
+ * The address-keyed limits are not the problem here, and it is worth saying why
+ * so the next person does not add a guard that buys nothing: `freshEmail()` is
+ * unique per run, so `resendConfirmation` and `passwordResetAddress` (3/hour
+ * each) see a new key every time. The single fixed-address call, in "asking for
+ * a reset says the same thing for any address", is against a test deliberately
+ * built to pass whether or not it is refused — the action swallows a rate-limit
+ * refusal precisely so a limit cannot leak which addresses exist.
+ *
+ * This file is the eighth to need this and the first where the limits are tight
+ * enough to bite within two runs. See `clearRateLimits`.
+ */
+test.beforeAll(async () => {
+  await clearRateLimits()
+})
 
 /** Unique per run: a reused address would hit the 60-second resend window. */
 function freshEmail() {

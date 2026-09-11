@@ -132,7 +132,17 @@ test.describe("invite link lifecycle", () => {
     // ---------------------------------------------------------------------
     await page.getByRole("link", { name }).click()
     await page.waitForURL(/\/circles\/[0-9a-f-]+$/)
-    await page.getByRole("link", { name: "Settings" }).click()
+    // **`exact`, because the app bar now renders on this route.**
+    //
+    // `name` is a substring match, so "Settings" also matches the header's
+    // "Account settings" cog — and clicking that navigates to `/settings`,
+    // which is precisely what this test did when the bar arrived. The old
+    // `tab-bar.tsx` warned about this in a comment: *"Account settings", not
+    // "Settings". The Circle page has its own Settings link to a different
+    // route, and two links with the same name are ambiguous to a screen reader
+    // as well as to a test locator.* The names were always distinct; the
+    // locator was only unambiguous because the cog was not on this page.
+    await page.getByRole("link", { name: "Settings", exact: true }).click()
     await page.waitForURL(/\/circles\/[0-9a-f-]+\/settings$/)
 
     const first = await generateLink(page)
@@ -237,7 +247,12 @@ test.describe("signed out", () => {
     // bounced to sign-in and loses the explanation on the way.
     await expect(page).toHaveURL(/\/\?notice=invite-invalid/)
     await expect(page.getByText(DEAD_LINK)).toBeVisible()
-    await expect(page.getByRole("heading", { name: "Solarity" })).toBeVisible()
+    // The landing page rendered under the notice rather than a redirect loop.
+    // Its `<h1>` is the headline since the design pass; the wordmark is a link
+    // in the header now, which is what a wordmark should be.
+    await expect(
+      page.getByRole("heading", { level: 1, name: /keep you honest/i }),
+    ).toBeVisible()
   })
 })
 

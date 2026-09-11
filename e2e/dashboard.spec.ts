@@ -1,6 +1,9 @@
 import { test, expect, type Browser, type Page } from "@playwright/test"
 import {
+  admin,
+  assertOk,
   checkinTimezone,
+  clearRateLimits,
   createCircleViaApi,
   deleteE2ECircles,
   deleteNotifications,
@@ -15,7 +18,7 @@ import {
   userIdByEmail,
 } from "./db"
 import { storageStateFor } from "./session"
-import { errorAlert } from "./ui"
+import { errorAlert, submitAndWait } from "./ui"
 
 /**
  * Step 8f: the dashboard's sections, the notifications reader, and settings.
@@ -48,6 +51,17 @@ async function ownerPage(browser: Browser) {
   }
   return ctx.page
 }
+
+/**
+ * A full budget, the same one `invite.spec.ts` takes.
+ *
+ * This file seeds Circles, and Circle creation is metered against the two
+ * accounts the whole suite shares. Per file rather than per run, so no spec has
+ * to know what the one before it spent — see `clearRateLimits`.
+ */
+test.beforeAll(async () => {
+  await clearRateLimits()
+})
 
 test.afterAll(async () => {
   await deleteE2ECircles()
@@ -223,7 +237,12 @@ test("the badge counts unread, opening the tab clears it, and a reload keeps it 
     )
 
     await p.goto("/dashboard")
-    const badge = p.getByRole("link", { name: /^Notifications \(\d+\)$/ })
+    // **The count is in the accessible name, not the visible label.** The bar
+    // draws a dot; a badge reading "12" invites you to read it, and the number
+    // teaches nothing that opening the section does not say better. So the
+    // count is announced rather than printed — `Notifications, 1 unread` — and
+    // this is the assertion that keeps it honest.
+    const badge = p.getByRole("link", { name: /^Notifications, \d+ unread$/ })
     await expect(badge, "no unread count on the tab").toBeVisible()
 
     await badge.click()
@@ -246,8 +265,11 @@ test("the badge counts unread, opening the tab clears it, and a reload keeps it 
       .toBe(0)
 
     await p.reload()
+    // **`exact`, or this asserts nothing.** `name` is a substring match by
+    // default, so "Notifications" also matches "Notifications, 3 unread" — the
+    // very state this line exists to rule out. It passed either way before.
     await expect(
-      p.getByRole("link", { name: "Notifications" }),
+      p.getByRole("link", { name: "Notifications", exact: true }),
       "the badge came back after a reload",
     ).toBeVisible()
   } finally {
@@ -499,5 +521,111 @@ test("the daily check-in screen setting saves, and says what it does not do", as
     ).toBeChecked()
   } finally {
     await setTodayScreenMode(ownerId, original)
+  }
+})
+
+/**
+ * The two settings toggles nothing drove through the UI.
+ *
+ * ## Why these two, and why asserting on the database rather than the screen
+ *
+ * `profile.spec.ts` covers what stats visibility *does* — withheld stats are not
+ * rendered as zeroes, your own always show you, a stranger's are opt-in — and it
+ * is thorough. **But it sets the flag with an admin write.** So the consequence
+ * was proven and the control was not: `updateStatsVisibility` could write the
+ * wrong column, misread an unticked checkbox, or fail silently, and every
+ * assertion in that file would stay green while the toggle in settings did
+ * nothing at all.
+ *
+ * That is the gap this closes, and it is why the assertion is on the stored
+ * value. Re-checking the profile would re-test `profile.spec.ts`'s subject; the
+ * only new claim here is **that the form writes what it says it writes.**
+ *
+ * ## Both directions, because a checkbox sends nothing when unticked
+ *
+ * The actions read absence as off rather than looking for a `"false"`, which is
+ * correct and is also the half that a one-directional test would miss entirely:
+ * an action that ignored the field would still appear to work when ticking.
+ */
+test("the notification-detail and profile-stats toggles write what they say", async ({
+  browser,
+}) => {
+  const p = await ownerPage(browser)
+  const ownerId = await userIdByEmail(requireEnv("E2E_OWNER_EMAIL"))
+
+  const readPushName = async () => {
+    const r = await admin
+      .from("users")
+      .select("push_shows_circle_name")
+      .eq("id", ownerId)
+      .single()
+    assertOk(r, "read push_shows_circle_name")
+    return r.data.push_shows_circle_name
+  }
+  const readStats = async () => {
+    const r = await admin
+      .from("user_lifetime_stats")
+      .select("visible_on_profile")
+      .eq("user_id", ownerId)
+      .single()
+    assertOk(r, "read visible_on_profile")
+    return r.data.visible_on_profile
+  }
+
+  // A real account's preferences, captured and put back like the timezone.
+  const originalPush = await readPushName()
+  const originalStats = await readStats()
+
+  try {
+    await p.goto("/settings")
+
+    for (const [name, box, read, original] of [
+      [
+        "Notification detail",
+        "Name the Circle in notifications",
+        readPushName,
+        originalPush,
+      ],
+      ["Profile stats", "Show my streaks and totals", readStats, originalStats],
+    ] as const) {
+      const form = p.getByRole("form", { name })
+
+      // Flip away from wherever the account actually sits, so the test asserts a
+      // change rather than agreeing with a value that was already there.
+      const target = !original
+      const checkbox = form.getByRole("checkbox", { name: box })
+      await expect(checkbox, `${name}: the checkbox never rendered`).toBeVisible()
+      await checkbox.setChecked(target)
+
+      await submitAndWait(p, form.getByRole("button", { name: "Save" }), "/settings")
+      await expect(form.getByText("Saved.")).toBeVisible()
+
+      await expect
+        .poll(read, { message: `${name}: the toggle did not reach the database` })
+        .toBe(target)
+
+      // Back again: the unticked direction is the one a checkbox cannot send,
+      // so an action that ignored the field would pass the first half alone.
+      await checkbox.setChecked(original)
+      await submitAndWait(p, form.getByRole("button", { name: "Save" }), "/settings")
+      await expect
+        .poll(read, { message: `${name}: the toggle would not go back` })
+        .toBe(original)
+
+      // And the box reflects the server after a reload, not the last click.
+      await p.reload()
+      await expect(
+        p.getByRole("form", { name }).getByRole("checkbox", { name: box }),
+      ).toBeChecked({ checked: original })
+    }
+  } finally {
+    await admin
+      .from("users")
+      .update({ push_shows_circle_name: originalPush })
+      .eq("id", ownerId)
+    await admin
+      .from("user_lifetime_stats")
+      .update({ visible_on_profile: originalStats })
+      .eq("user_id", ownerId)
   }
 })

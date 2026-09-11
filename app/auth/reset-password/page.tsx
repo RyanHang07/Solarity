@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { LegalFooter } from "@/components/legal-footer"
+import { AuthShell } from "@/components/auth/auth-shell"
 import { createClient } from "@/lib/supabase/server"
 import { ResetForm } from "./reset-form"
 
@@ -45,22 +45,25 @@ export default async function ResetPasswordPage() {
 
   if (!user) {
     return (
-      <main className="flex min-h-full flex-1 flex-col items-center justify-center gap-6 p-8">
-        <div className="flex w-full max-w-sm flex-col gap-3 rounded border px-4 py-5">
-          <h1 className="text-xl font-semibold">That link has expired</h1>
-          <p className="text-sm opacity-70">
-            Reset links are single-use and don&apos;t last long. Ask for another
-            and it&apos;ll arrive in a moment.
-          </p>
-          <Link
-            href="/auth/forgot-password"
-            className="self-start rounded border px-4 py-2 text-sm font-medium"
-          >
-            Send a new link
-          </Link>
-        </div>
-        <LegalFooter />
-      </main>
+      <AuthShell>
+        <h1 className="ds-type-title ds-text-primary">That link has expired</h1>
+        <p className="ds-type-note ds-text-muted">
+          Reset links are single-use and don&apos;t last long. Ask for another
+          and it&apos;ll arrive in a moment.
+        </p>
+        {/*
+          The same navigation-styled-as-a-primary-action as `/auth/error`. Both
+          screens are dead ends with exactly one way forward, and that way is a
+          route rather than a form, so it has to be an `<a>`.
+        */}
+        <Link
+          href="/auth/forgot-password"
+          className="ds-cta ds-bg-flame ds-text-on-light ds-type-label self-start px-4 py-2.5"
+          style={{ ["--ds-cta-min" as string]: "auto" }}
+        >
+          Send a new link
+        </Link>
+      </AuthShell>
     )
   }
 
@@ -71,20 +74,16 @@ export default async function ResetPasswordPage() {
    * legitimate thing to want, and refusing it would be a guard against nothing.
    */
   return (
-    <main className="flex min-h-full flex-1 flex-col items-center justify-center gap-6 p-8">
-      <div className="flex w-full max-w-sm flex-col gap-4 rounded border px-4 py-5">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold">Set a new password</h1>
-          <p className="text-sm opacity-70">
-            For <strong className="font-medium">{user.email}</strong>. You&apos;re
-            already signed in, so this is the last step.
-          </p>
-        </div>
-
-        <ResetForm />
+    <AuthShell>
+      <div className="flex flex-col gap-1.5">
+        <h1 className="ds-type-title ds-text-primary">Set a new password</h1>
+        <p className="ds-type-note ds-text-muted">
+          For <strong className="ds-text-primary font-medium">{user.email}</strong>
+          . You&apos;re already signed in, so this is the last step.
+        </p>
       </div>
 
-      <LegalFooter />
-    </main>
+      <ResetForm />
+    </AuthShell>
   )
 }

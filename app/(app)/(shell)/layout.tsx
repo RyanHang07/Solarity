@@ -2,8 +2,6 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getCheckinDate } from "@/lib/supabase/checkin-date"
 import { alreadySeen, hasUnfinishedDay } from "@/lib/today-gate"
-import { TAB_NOTIFICATION_TYPES } from "@/lib/notification-types"
-import { TabBar } from "./tab-bar"
 
 /**
  * Steps 14a and 15b. **The app shell: everything that must not move.**
@@ -23,13 +21,15 @@ import { TabBar } from "./tab-bar"
  * `/today`, `/settings` and `/circles/[id]` stay deliberately outside it —
  * `/today` in particular is a full-screen gate that a nav bar would undermine.
  *
- * **Three things live here, and the test for admission is "does it belong to
- * the shell rather than to a section".**
+ * **One thing lives here now, and the test for admission is unchanged: "does
+ * it belong to the shell rather than to a section".**
  *
- * 1. The `/today` gate, so it fires whichever section you land on.
- * 2. The unread count, because it renders on a section *label* — a badge you
- *    can only see after opening the thing it counts is not a badge.
- * 3. The bar itself.
+ * The `/today` gate, so it fires whichever section you land on.
+ *
+ * The unread count and the bar used to be here too. They moved to
+ * `(app)/layout.tsx` because the answer changed rather than the rule — the bar
+ * is the app's furniture, not the shell's, and it now renders on `/settings`
+ * and `/circles/[id]` as well, which are not sections and never had it.
  *
  * **Memberships are deliberately *not* here**, even though all three sections
  * read them. There is no way to hand layout data to a child page, and hoisting
@@ -56,7 +56,7 @@ export default async function ShellLayout({
   } = await supabase.auth.getUser()
   if (!user) redirect("/auth/sign-in")
 
-  const [{ data: profile }, { count: unread }, today] = await Promise.all([
+  const [{ data: profile }, today] = await Promise.all([
     // One column, for the gate below. The row is already cached by the parent
     // layout's own read of this table.
     supabase
@@ -64,18 +64,6 @@ export default async function ShellLayout({
       .select("today_screen_mode")
       .eq("id", user.id)
       .maybeSingle(),
-
-    // `head: true` asks PostgREST for the count and none of the rows.
-    //
-    // **A badge must count what its section can show.** Digests moved to the
-    // day boxes in 11c, so counting them would put a number on Notifications
-    // that nothing on Notifications could clear.
-    supabase
-      .from("notifications")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .is("read_at", null)
-      .in("type", TAB_NOTIFICATION_TYPES),
 
     // One implementation of the 2 AM boundary rule, in the database, shared by
     // this read path and the INSERT policy that guards writes.
@@ -161,16 +149,25 @@ export default async function ShellLayout({
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      {/*
-        **The count goes stale on its own, and `MarkRead` repairs it.** This
-        layout is not re-rendered when you navigate to Notifications, so
-        `unread` here is whatever it was when you entered the dashboard. Opening
-        the list marks everything read and then calls `router.refresh()`, which
-        re-renders this layout on the server without unmounting the bar.
-      */}
-      <TabBar badges={{ notifications: unread ?? 0 }} />
-      {children}
-    </div>
+    /*
+      ═══ what is left of the shell ═══
+
+      **The bar and its unread count have gone to `(app)/layout.tsx`.**
+
+      This layout's own admission test was *"does it belong to the shell rather
+      than to a section"*, and the answer moved rather than the rule. The bar is
+      the **app's** furniture now — one navbar on desktop, one tab bar on a
+      phone, present on `/settings` and `/circles/[id]` too, which are not
+      sections and never had it.
+
+      The count went with it because a badge renders on the bar, and data that
+      renders on a component belongs to whatever owns that component.
+
+      What is left is the one thing that is genuinely the shell's: the `/today`
+      gate. It stays here rather than in `(app)` for the reason recorded below —
+      `/today` lives inside `(app)`, so a condition up there would redirect
+      `/today` to itself forever.
+    */
+    <div className="flex flex-col gap-8">{children}</div>
   )
 }

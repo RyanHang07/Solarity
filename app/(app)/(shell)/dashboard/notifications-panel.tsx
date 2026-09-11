@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { markNotificationsRead } from "@/app/actions/notifications"
+import { Panel } from "@/components/ui/panel"
 
 export type NotificationRow = {
   id: string
@@ -182,12 +183,11 @@ export function NotificationsPanel({
   unread: number
 }) {
   return (
-    <section aria-label="Notifications" className="flex flex-col gap-3">
+    <Panel title="Notifications" aria-label="Notifications">
       <MarkRead unread={unread} />
-      <h2 className="text-lg font-semibold">Notifications</h2>
 
       {rows.length === 0 ? (
-        <p className="text-sm opacity-70">Nothing yet.</p>
+        <p className="ds-text-muted">Nothing yet.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {rows.map((n) => {
@@ -198,22 +198,30 @@ export function NotificationsPanel({
                 <span>
                   {describe(n)}
                   {gone ? (
-                    <span className="opacity-60"> (no longer available)</span>
+                    <span className="ds-text-muted"> (no longer available)</span>
                   ) : null}
                 </span>
-                <span className="text-xs opacity-60">{n.createdAt}</span>
+                <span className="ds-type-note ds-text-muted">{n.createdAt}</span>
               </span>
             )
 
             return (
               <li
                 key={n.id}
-                // Unread is styled from the row's own `read_at`, which is the
-                // server's value at render time. The mark-read write happens
-                // after this paints, so the list you are looking at still shows
-                // which ones were new when you opened it.
-                className={`rounded border px-3 py-2 text-sm ${
-                  n.readAt ? "opacity-60" : "font-medium"
+                /*
+                  Unread is styled from the row's own `read_at`, which is the
+                  server's value at render time. The mark-read write happens
+                  after this paints, so the list you are looking at still shows
+                  which ones were new when you opened it.
+
+                  **Read rows go muted rather than `opacity-60`.** The opacity
+                  faded the box's hairline too, so a mostly-read list looked
+                  like it had holes in it. Unread stays `ds-text-primary` and
+                  keeps its weight — the contrast between the two is the whole
+                  signal.
+                */
+                className={`ds-panel px-3 py-2 ${
+                  n.readAt ? "ds-text-muted" : "ds-type-label ds-text-primary"
                 }`}
               >
                 {href ? <Link href={href}>{body}</Link> : body}
@@ -223,9 +231,9 @@ export function NotificationsPanel({
         </ul>
       )}
 
-      <p className="text-xs opacity-60">
+      <p className="ds-type-note ds-text-muted mt-3">
         Notifications are kept for 90 days.
       </p>
-    </section>
+    </Panel>
   )
 }

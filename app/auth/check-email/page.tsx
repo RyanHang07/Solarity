@@ -1,6 +1,8 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { LegalFooter } from "@/components/legal-footer"
+import { AuthShell } from "@/components/auth/auth-shell"
+import { GoogleButton } from "@/components/auth/google-button"
+import { CardFoot } from "@/components/ui/field"
 import { createClient } from "@/lib/supabase/server"
 import { signInWithGoogle, signOut } from "@/app/actions/auth"
 import { CONTACT_EMAIL } from "@/lib/legal"
@@ -68,81 +70,85 @@ export default async function CheckEmailPage({
   const email = user?.email ?? (fromQuery?.includes("@") ? fromQuery : null)
 
   return (
-    <main className="flex min-h-full flex-1 flex-col items-center justify-center gap-6 p-8">
-      <div className="flex w-full max-w-sm flex-col gap-4 rounded border px-4 py-5">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold">Check your email</h1>
-          <p className="text-sm opacity-70">
-            {email ? (
-              <>
-                We sent a confirmation link to{" "}
-                <strong className="font-medium">{email}</strong>. Open it and
-                you&apos;re in.
-              </>
-            ) : (
-              <>We sent you a confirmation link. Open it and you&apos;re in.</>
-            )}
-          </p>
-        </div>
-
-        {/*
-          Required text, not a nicety. Without a custom domain, SPF and DKIM
-          cannot align, so mail to another provider may be filtered silently.
-          See testing.md, Brevo & email.
-        */}
-        <p className="text-sm opacity-70">
-          If it hasn&apos;t arrived in a minute or two, check your spam folder.
-        </p>
-
-        {/*
-          20e. Needs an address, and now has one in both cases. Landing here
-          with neither a session nor a parameter means somebody typed the URL,
-          and a form asking for an email address again would just be a second
-          signup form.
-        */}
-        {email ? <ResendForm email={email} /> : null}
-
-        <div className="flex flex-col gap-2 border-t pt-4">
-          <p className="text-sm">Already have an account?</p>
-          <form action={signInWithGoogle}>
-            <input type="hidden" name="next" value="/dashboard" />
-            <button
-              type="submit"
-              className="rounded border px-4 py-2 text-sm font-medium"
-            >
-              Continue with Google
-            </button>
-          </form>
-          <p className="text-xs opacity-60">
-            If you signed up with Google before, use this. No confirmation email
-            is sent for a Google account.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 border-t pt-4 text-xs opacity-70">
-          {/* Only with a session to end. Signed out this would be a control
-              that does nothing to a state you are not in. */}
-          {user ? (
-            <form action={signOut}>
-              <button type="submit" className="underline">
-                Sign out
-              </button>
-            </form>
+    /*
+      **No wordmark, and this is the screen the rule was written for.** You
+      arrive here from signup, one step ago, without having gone anywhere. A
+      second mark would make a two-step flow read as two products — and the
+      thing that needs to be first on the page is the address the mail went to,
+      because the commonest failure here is a typo the person can still see.
+    */
+    <AuthShell>
+      <div className="flex flex-col gap-1.5">
+        <h1 className="ds-type-title ds-text-primary">Check your email</h1>
+        <p className="ds-type-note ds-text-muted">
+          {email ? (
+            <>
+              We sent a confirmation link to{" "}
+              {/*
+                `ds-text-primary`, not bold. The address is the one string here
+                somebody has to *check*, and lifting it out of muted does that
+                better than weight does — the surrounding sentence stays quiet
+                instead of the address shouting inside it.
+              */}
+              <strong className="ds-text-primary font-medium">{email}</strong>.
+              Open it and you&apos;re in.
+            </>
           ) : (
-            <Link href="/auth/sign-in" className="underline">
-              Sign in
-            </Link>
+            <>We sent you a confirmation link. Open it and you&apos;re in.</>
           )}
-          <Link href="/" className="underline">
-            Back to Solarity
-          </Link>
-          <a href={`mailto:${CONTACT_EMAIL}`} className="underline">
-            Get help
-          </a>
-        </div>
+        </p>
       </div>
 
-      <LegalFooter />
-    </main>
+      {/*
+        Required text, not a nicety. Without a custom domain, SPF and DKIM
+        cannot align, so mail to another provider may be filtered silently.
+        See testing.md, Brevo & email.
+      */}
+      <p className="ds-type-note ds-text-muted">
+        If it hasn&apos;t arrived in a minute or two, check your spam folder.
+      </p>
+
+      {/*
+        20e. Needs an address, and now has one in both cases. Landing here
+        with neither a session nor a parameter means somebody typed the URL,
+        and a form asking for an email address again would just be a second
+        signup form.
+      */}
+      {email ? <ResendForm email={email} /> : null}
+
+      <CardFoot>
+        <p className="ds-type-note ds-text-primary">Already have an account?</p>
+        <form action={signInWithGoogle}>
+          <input type="hidden" name="next" value="/dashboard" />
+          <GoogleButton />
+        </form>
+        <p className="ds-type-note ds-text-muted">
+          If you signed up with Google before, use this. No confirmation email
+          is sent for a Google account.
+        </p>
+      </CardFoot>
+
+      <div className="ds-border-oatmeal flex flex-wrap items-center gap-3 border-t pt-4">
+        {/* Only with a session to end. Signed out this would be a control
+            that does nothing to a state you are not in. */}
+        {user ? (
+          <form action={signOut}>
+            <button type="submit" className="ds-link ds-type-note">
+              Sign out
+            </button>
+          </form>
+        ) : (
+          <Link href="/auth/sign-in" className="ds-link ds-type-note">
+            Sign in
+          </Link>
+        )}
+        <Link href="/" className="ds-link ds-type-note">
+          Back to Solarity
+        </Link>
+        <a href={`mailto:${CONTACT_EMAIL}`} className="ds-link ds-type-note">
+          Get help
+        </a>
+      </div>
+    </AuthShell>
   )
 }

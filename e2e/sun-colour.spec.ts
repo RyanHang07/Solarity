@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test"
 import {
   admin,
+  clearRateLimits,
   createCircleViaApi,
   deleteE2ECircles,
   requireEnv,
@@ -35,6 +36,18 @@ import { SUN_COLOR_PRESETS } from "@/lib/galaxy/palettes"
  */
 
 const OWNER = () => requireEnv("E2E_OWNER_EMAIL")
+
+/**
+ * A full budget, the same one `invite.spec.ts` takes.
+ *
+ * This file seeds a Circle to read a roster through, and Circle creation is
+ * metered against the two accounts the whole suite shares. Per file rather than
+ * per run, so no spec has to know what the one before it spent — see
+ * `clearRateLimits`.
+ */
+test.beforeAll(async () => {
+  await clearRateLimits()
+})
 
 test("every preset in the palette is a value the column accepts", async () => {
   const userId = await userIdByEmail(OWNER())

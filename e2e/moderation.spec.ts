@@ -3,6 +3,7 @@ import {
   admin,
   assertOk,
   circleName,
+  clearRateLimits,
   createCircleViaApi,
   deleteE2ECircles,
   inviteTokenFor,
@@ -49,6 +50,24 @@ async function clearReports(reporterId: string) {
   await admin.from("content_reports").delete().eq("reporter_user_id", reporterId)
 }
 
+/**
+ * **Every test here builds a Circle and joins it, and both are metered.**
+ *
+ * `createCircle` is 5 a day and `joinCircle` is 10 an hour, both keyed by the
+ * two real accounts the whole suite shares; `/join/[token]` spends
+ * `inviteAttempt` as well, keyed by a client IP that localhost makes identical
+ * for every request. Nothing in this file re-tests those limits, so it should
+ * start from a full budget the way `invite.spec.ts` does.
+ *
+ * Skipping it does not fail loudly. A refusal renders as an alert next to a
+ * control that is still on the page, so the test reports "the block did not
+ * apply" — a claim about the feature — when what happened is that the setup
+ * never joined the Circle.
+ */
+test.beforeAll(async () => {
+  await clearRateLimits()
+})
+
 test("blocking hides the profile from both sides, and settings is the way back", async ({
   browser,
 }) => {
@@ -77,10 +96,62 @@ test("blocking hides the profile from both sides, and settings is the way back",
     ).toBeVisible()
 
     // ---------------------------------------------------------------- block
+    /**
+     * **Two waits, and both exist because this test was intermittent.**
+     *
+     * It failed four times in one afternoon and then passed with no code
+     * change. The trace said why: **no POST was ever sent**. The confirm button
+     * was clicked, and the form it sits in never submitted.
+     *
+     * That is a hydration race. `<form action={blockAction}>` is a client
+     * component form, so before React attaches, its `action` is a placeholder
+     * rather than a submit target — a click lands on a real button, does
+     * nothing, and reports no error. Every downstream assertion then fails
+     * describing the *feature* ("the blocked profile was still rendered")
+     * rather than the cause, which is what sent three separate investigations
+     * at rate limits, RLS and revalidation.
+     *
+     * **The first wait proves hydration.** The confirm panel only exists
+     * because `setConfirmingBlock(true)` ran, so seeing its copy means React is
+     * attached and the form beneath it is live.
+     */
     await ownerPage.getByRole("button", { name: `Block ${joinerName}` }).click()
-    await ownerPage
-      .getByRole("button", { name: "Block", exact: true })
-      .click()
+    await expect(
+      ownerPage.getByText(/Neither of you will see the other/i),
+      "the block confirmation never appeared, so the page had not hydrated",
+    ).toBeVisible()
+
+    /**
+     * **The second wait asserts the submit actually left the browser.**
+     *
+     * A server action posts to the current URL, so this is a POST to
+     * `/profile/<name>`. Waiting on it turns a silent no-op into a failure at
+     * the click — naming the real problem — instead of a confusing assertion
+     * three steps later about a profile that should have disappeared.
+     */
+    await Promise.all([
+      ownerPage.waitForResponse(
+        (r) => r.request().method() === "POST" && r.url().includes("/profile/"),
+      ),
+      ownerPage.getByRole("button", { name: "Block", exact: true }).click(),
+    ])
+
+    /**
+     * **Blocking takes you away from the page it just deleted.**
+     *
+     * `/profile/<them>` 404s the instant the block lands, so staying put meant
+     * the reward for blocking somebody was Next's not-found page. The action
+     * redirects to the dashboard with the app's ordinary `?notice=` instead.
+     *
+     * Asserted here rather than trusted, because it is the half a future
+     * refactor would drop: the block would still work, and the only symptom
+     * would be somebody landing on a 404 at a bad moment.
+     */
+    await expect(ownerPage).toHaveURL(/\/dashboard\?notice=blocked/)
+    await expect(
+      ownerPage.getByRole("status").filter({ hasText: /^Blocked\./ }),
+      "the block notice did not render",
+    ).toBeVisible()
 
     /**
      * The blocker's view: the profile they were just on is gone.

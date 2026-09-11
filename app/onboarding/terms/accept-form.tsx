@@ -3,18 +3,16 @@
 import { useActionState } from "react"
 import { useFormStatus } from "react-dom"
 import { acceptTerms } from "@/app/actions/onboarding"
+import { PrimaryButton } from "@/components/ui/button"
+import { FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
 
 function Submit() {
   const { pending } = useFormStatus()
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="rounded border px-4 py-2 text-sm font-medium disabled:opacity-50"
-    >
+    <PrimaryButton type="submit" disabled={pending} full>
       {pending ? "Saving…" : "I agree"}
-    </button>
+    </PrimaryButton>
   )
 }
 
@@ -46,11 +44,7 @@ export function AcceptForm({ next }: { next: string }) {
     <form action={action} className="flex flex-col gap-3">
       <input type="hidden" name="next" value={next} />
       <Submit />
-      {state && !state.ok ? (
-        <p role="alert" className="text-sm text-red-600">
-          {state.error}
-        </p>
-      ) : null}
+      {state && !state.ok ? <FormError>{state.error}</FormError> : null}
     </form>
   )
 }

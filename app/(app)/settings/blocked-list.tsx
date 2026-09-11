@@ -3,12 +3,19 @@
 import { useActionState } from "react"
 import { useFormStatus } from "react-dom"
 import { unblockUser } from "@/app/actions/moderation"
+import { FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
 
+/**
+ * **A link, not a danger button.** Unblocking is the *reversal* of the
+ * destructive act, so dressing it in red would colour undoing a mistake the
+ * same as making one. It also sits at the end of a row rather than under a
+ * heading, where a full control would outweigh the name it belongs to.
+ */
 function Unblock() {
   const { pending } = useFormStatus()
   return (
-    <button type="submit" disabled={pending} className="text-xs underline opacity-70">
+    <button type="submit" disabled={pending} className="ds-link ds-type-note">
       {pending ? "…" : "Unblock"}
     </button>
   )
@@ -40,13 +47,13 @@ export function BlockedList({
 
   return (
     <section aria-label="Blocked accounts" className="flex flex-col gap-2">
-      <h2 className="text-lg font-semibold">Blocked</h2>
+      <h2 className="ds-type-heading ds-text-primary">Blocked</h2>
 
       {blocked.length === 0 ? (
         // Rendered rather than hidden. An empty section says the feature exists
         // and that you have not used it; a missing one says nothing at all, and
         // someone looking for where to undo a block would not find this page.
-        <p className="text-sm opacity-70">
+        <p className="ds-text-muted">
           You haven&apos;t blocked anyone. Blocking is on someone&apos;s profile.
         </p>
       ) : (
@@ -54,14 +61,14 @@ export function BlockedList({
           {blocked.map((b) => (
             <li
               key={b.user_id}
-              className="flex items-center justify-between gap-3 rounded border px-3 py-2 text-sm"
+              className="ds-panel flex items-center justify-between gap-3 px-3 py-2"
             >
               {/* Username leads, as everywhere one person is named to another:
                   `display_name` is not unique. */}
-              <span>
+              <span className="ds-text-primary">
                 {b.username ?? "an account"}
                 {b.display_name ? (
-                  <span className="opacity-60"> · {b.display_name}</span>
+                  <span className="ds-text-muted"> · {b.display_name}</span>
                 ) : null}
               </span>
               <form action={action}>
@@ -73,16 +80,12 @@ export function BlockedList({
         </ul>
       )}
 
-      <p className="text-xs opacity-60">
+      <p className="ds-type-note ds-text-muted">
         Blocking hides each of you from the other&apos;s profile. You still share
         any Circles you were both in, and nobody is told either way.
       </p>
 
-      {state && !state.ok ? (
-        <p role="alert" className="text-sm text-red-600">
-          {state.error}
-        </p>
-      ) : null}
+      {state && !state.ok ? <FormError>{state.error}</FormError> : null}
     </section>
   )
 }

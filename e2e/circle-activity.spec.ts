@@ -3,6 +3,7 @@ import {
   admin,
   assertOk,
   checkinDateFor,
+  clearRateLimits,
   createCircleViaApi,
   deleteE2ECircles,
   inviteTokenFor,
@@ -133,8 +134,52 @@ async function circleOfTwo(label: string) {
 }
 
 /** A check-in written as the person themselves, so the date is their own. */
+/**
+ * **Clears the actor's other check-ins for that day, and restores them after.**
+ *
+ * `trg_first_checkin_notify` fires only on the *first* check-in of a person's
+ * day — `v_count <> 1 then return new` — and it counts every
+ * `progress_entries` row for that user and date, across all goals and all
+ * Circles. So a single real check-in on the account, made by hand that morning,
+ * silently turns this whole file's subject off.
+ *
+ * **That is exactly what happened.** The owner account is the one a person
+ * actually uses; the joiner is not. So the joiner's check-in fired and the
+ * owner's did not, which reads as "the notification works in one direction" and
+ * sent three separate investigations at preferences, blocks and `streak_grace`.
+ * `docs/testing.md` already names this shape twice — a test asserting on a fact
+ * about the account rather than establishing it.
+ *
+ * Parked and restored rather than deleted: these are a real person's rows.
+ */
+async function parkTodaysCheckins(userId: string, date: string) {
+  const existing = await admin
+    .from("progress_entries")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("check_in_date", date)
+  assertOk(existing, "read today's check-ins")
+
+  if (existing.data.length === 0) return async () => {}
+
+  await admin
+    .from("progress_entries")
+    .delete()
+    .eq("user_id", userId)
+    .eq("check_in_date", date)
+
+  return async () => {
+    await admin.from("progress_entries").insert(existing.data)
+  }
+}
+
 async function checkIn(email: string, userId: string, goalId: string) {
   const date = await checkinDateFor(email)
+
+  // The trigger under test only fires on the day's first entry, so this has to
+  // *be* the first. See `parkTodaysCheckins`.
+  const restore = await parkTodaysCheckins(userId, date)
+
   assertOk(
     await admin
       .from("progress_entries")
@@ -142,11 +187,36 @@ async function checkIn(email: string, userId: string, goalId: string) {
       .select("goal_id"),
     "write a check-in",
   )
+
+  // Restored at the end of the run rather than here: putting the real rows back
+  // now would make the *next* `checkIn` in the same test the second of the day.
+  parked.push(restore)
+
   return date
 }
 
+/** Undo functions from `parkTodaysCheckins`, drained in `afterAll`. */
+const parked: (() => Promise<void>)[] = []
+
 test.afterAll(async () => {
   await deleteE2ECircles()
+
+  // Put the real check-ins back, newest parking first. `afterAll` still runs
+  // after a test is killed on timeout, which `finally` does not — and these are
+  // somebody's actual history.
+  for (const restore of parked.reverse()) await restore()
+  parked.length = 0
+})
+
+/**
+ * A full budget, the same one `invite.spec.ts` takes.
+ *
+ * This file seeds Circles and joins them, and both are metered against the two
+ * accounts the whole suite shares. Per file rather than per run, so no spec has
+ * to know what the one before it spent — see `clearRateLimits`.
+ */
+test.beforeAll(async () => {
+  await clearRateLimits()
 })
 
 test("a first check-in reaches the Circle once, however many follow", async () => {

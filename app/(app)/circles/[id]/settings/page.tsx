@@ -61,11 +61,11 @@ export default async function CircleSettingsPage({
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <Link href={`/circles/${id}`} className="text-sm underline opacity-70">
+        <Link href={`/circles/${id}`} className="ds-link self-start">
           Back to {circle.name}
         </Link>
-        <h1 className="text-xl font-semibold">Circle settings</h1>
-        <p className="text-sm opacity-70">
+        <h1 className="ds-type-title ds-text-primary">Circle settings</h1>
+        <p className="ds-type-note ds-text-muted">
           You are {me?.role === "owner" ? "the owner" : "an admin"}.
         </p>
       </header>
@@ -90,8 +90,8 @@ export default async function CircleSettingsPage({
         />
       ) : (
         <section className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold">Invite link</h2>
-          <p className="text-sm opacity-70">
+          <h2 className="ds-type-heading ds-text-primary">Invite link</h2>
+          <p className="ds-text-muted">
             This Circle is {circle.group_status}, so it can&apos;t take new
             members and any link it had was turned off automatically.
           </p>

@@ -1,0 +1,32 @@
+<!--
+  Master artwork for the `purpose: "maskable"` PNG.
+
+  **The only difference from icon.svg is the scale, and it is the whole point.**
+  Android crops a maskable icon to whatever shape the launcher wants — circle,
+  squircle, teardrop, rounded square — and guarantees only the centre 80% of the
+  canvas survives. Anything outside that is decoration the user may never see.
+
+  So the mark is drawn at scale(3.2) rather than scale(4): 256 of 512, half the
+  canvas, comfortably inside the 410px safe circle even after a teardrop crop
+  takes a bite out of one corner. The background bleeds to the full square,
+  which is what makes the crop invisible — a maskable icon with a transparent
+  margin shows the launcher's own backdrop through the gap.
+
+  #0f1620 is --ds-abyss, #ffb162 is --ds-burning-flame.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#0f1620"/>
+  <g transform="translate(256,256) scale(3.2)">
+    <g fill="#ffb162">
+      <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z"/>
+      <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z" transform="rotate(45)"/>
+      <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z" transform="rotate(90)"/>
+      <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z" transform="rotate(135)"/>
+      <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z" transform="rotate(180)"/>
+      <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z" transform="rotate(225)"/>
+      <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z" transform="rotate(270)"/>
+      <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z" transform="rotate(315)"/>
+    </g>
+    <circle r="5.5" fill="#0f1620" stroke="#ffb162" stroke-width="2"/>
+  </g>
+</svg>

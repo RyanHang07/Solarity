@@ -3,18 +3,21 @@
 import { useActionState, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { archiveCircle } from "@/app/actions/circles"
+import { SecondaryButton } from "@/components/ui/button"
+import { FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
 
 function Submit() {
   const { pending } = useFormStatus()
   return (
-    <button
+    <SecondaryButton
       type="submit"
       disabled={pending}
-      className="rounded border border-red-600 px-3 py-2 text-sm font-medium text-red-600 disabled:opacity-50"
+      align="center"
+      className="ds-border-danger ds-text-danger"
     >
       {pending ? "Archiving…" : "Archive this Circle"}
-    </button>
+    </SecondaryButton>
   )
 }
 
@@ -40,10 +43,16 @@ export function ArchivePanel({
   const [confirming, setConfirming] = useState(false)
 
   return (
-    <section className="flex flex-col gap-3 border-t pt-6">
+    <section className="ds-border-oatmeal flex flex-col gap-3 border-t pt-6">
       <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold">Archive</h2>
-        <p className="text-sm opacity-70">
+        {/*
+          `ds-text-danger` on the heading, the same as "Delete your account".
+          Both were oatmeal until `ds-link` was `:where()`d — the cascade bug
+          that made two destructive controls look ordinary while every check
+          passed.
+        */}
+        <h2 className="ds-type-heading ds-text-danger">Archive</h2>
+        <p className="ds-text-muted">
           Ends the Circle for everyone. It stops counting streaks, stops taking
           members, and moves to the Archived list, where everyone can still read
           its history. This can&apos;t be undone.
@@ -51,12 +60,14 @@ export function ArchivePanel({
       </div>
 
       {confirming ? (
-        <div className="flex flex-col gap-2 rounded border border-red-600 px-3 py-2">
-          <p className="text-sm">
+        <div className="ds-panel ds-border-danger flex flex-col gap-2 px-3 py-2">
+          <p className="ds-text-primary">
             Archive <strong>{circleName}</strong>? The current streak stops here
             and nobody can restart it.
           </p>
-          <div className="flex gap-2">
+          {/* `items-center`: a button beside a text link, which the flex
+              default would stretch to the button's height. */}
+          <div className="flex flex-wrap items-center gap-2">
             <form action={action}>
               <input type="hidden" name="groupId" value={groupId} />
               <Submit />
@@ -64,28 +75,23 @@ export function ArchivePanel({
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="rounded px-3 py-2 text-sm underline opacity-70"
+              className="ds-link"
             >
               Cancel
             </button>
           </div>
         </div>
       ) : (
-        <button
-          type="button"
+        <SecondaryButton
           onClick={() => setConfirming(true)}
-          className="self-start rounded border px-3 py-2 text-sm font-medium"
+          className="ds-border-danger ds-text-danger"
         >
           Archive this Circle
-        </button>
+        </SecondaryButton>
       )}
 
       {/* On success the action redirects, so this only ever shows a failure. */}
-      {state && !state.ok ? (
-        <p role="alert" className="text-sm text-red-600">
-          {state.error}
-        </p>
-      ) : null}
+      {state && !state.ok ? <FormError>{state.error}</FormError> : null}
     </section>
   )
 }

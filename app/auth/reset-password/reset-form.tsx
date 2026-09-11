@@ -4,18 +4,16 @@ import { useActionState, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { updatePassword } from "@/app/actions/auth"
 import { PasswordFields } from "@/components/password-fields"
+import { PrimaryButton } from "@/components/ui/button"
+import { FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
 
 function Submit({ disabled }: { disabled: boolean }) {
   const { pending } = useFormStatus()
   return (
-    <button
-      type="submit"
-      disabled={pending || disabled}
-      className="rounded border px-4 py-2 text-sm font-medium disabled:opacity-50"
-    >
+    <PrimaryButton type="submit" disabled={pending || disabled} full>
       {pending ? "Saving…" : "Set new password"}
-    </button>
+    </PrimaryButton>
   )
 }
 
@@ -44,11 +42,7 @@ export function ResetForm() {
 
       <Submit disabled={!valid} />
 
-      {state && !state.ok ? (
-        <p role="alert" className="text-sm text-red-600">
-          {state.error}
-        </p>
-      ) : null}
+      {state && !state.ok ? <FormError>{state.error}</FormError> : null}
     </form>
   )
 }

@@ -89,16 +89,22 @@ export default async function TodayPage() {
         hideStreak
       />
 
+      {/*
+        **Both stay links rather than becoming buttons**, and the hierarchy is
+        the point: the screen's action is the row of phase discs above. Skipping
+        is a way out, and changing the frequency is a way out of ever seeing
+        this again — neither should look like the thing to press.
+      */}
       <div className="flex flex-col gap-2">
         <form action={leave}>
-          <button type="submit" className="text-sm underline opacity-70">
+          <button type="submit" className="ds-link self-start">
             Skip for now
           </button>
         </form>
 
         {/* Points at the control itself, not at the top of a page with four
             sections on it. */}
-        <Link href="/settings#check-in-screen" className="text-xs underline opacity-60">
+        <Link href="/settings#check-in-screen" className="ds-link ds-type-note">
           Change how often you see this
         </Link>
       </div>

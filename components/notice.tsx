@@ -46,6 +46,26 @@ const MESSAGES: Record<string, string> = {
   // **It says what survived.** Check-ins are kept anonymised so other members'
   // shared history stays intact, and a message claiming total erasure would be
   // the app's last word to that person and a false one.
+  /**
+   * 15d. **Blocking removes the page you were standing on.**
+   *
+   * `/profile/<them>` becomes a 404 the instant the block lands — correctly, it
+   * is the same answer as a username nobody has — so staying put meant the
+   * reward for blocking somebody was Next's not-found page. That reads as the
+   * app breaking at the exact moment somebody has done something deliberate and
+   * slightly fraught.
+   *
+   * **No name in the message.** Every string here is looked up by key and never
+   * interpolated from the URL, for the reason at the top of this file: a notice
+   * that renders arbitrary text is a phishing page on your own domain. The
+   * person just typed the name into a confirmation dialog; they know who.
+   *
+   * **It names the undo.** Blocking is reversible and the confirm said so, but
+   * that sentence is gone by the time this renders.
+   */
+  blocked:
+    "Blocked. Neither of you will see the other's profile, and they aren't told. You can undo this in settings.",
+
   "account-deleted":
     "Your account is deleted. Your goals, notes and photos are gone; past check-ins remain, with your name removed, so your Circles' shared history still adds up.",
 }
@@ -64,10 +84,10 @@ export function Notice({
   return (
     <p
       role="status"
-      className="flex items-center justify-between gap-3 rounded border px-3 py-2 text-sm"
+      className="ds-panel ds-text-primary flex items-center justify-between gap-3 px-3 py-2"
     >
       <span>{message}</span>
-      <Link href={href} className="shrink-0 underline opacity-70">
+      <Link href={href} className="ds-link shrink-0">
         Dismiss
       </Link>
     </p>
