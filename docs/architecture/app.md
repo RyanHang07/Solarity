@@ -467,8 +467,16 @@ Two caps apply and they are independent. Brevo allows 300/day; Supabase separate
 
 ### Icons
 
-**The artwork is `SunMark` in `--ds-burning-flame` on `--ds-abyss`**, and the SVG
-masters are the source. The PNGs are rasterised from them.
+**The artwork is the navbar, shrunk**: a flame `SunMark` on
+`--ds-blue-fantastic`, which is `.ds-navbar`'s own surface. The SVG masters are
+the source and the PNGs are rasterised from them.
+
+**Not `--ds-abyss`**, which was the first attempt. The abyss is the page *behind*
+the bar, and at `#0f1620` it is nearly black: a favicon disappears into a row of
+other dark favicons, and it is not the surface the mark normally sits on.
+`theme_color` and `background_color` in `app/manifest.ts` do stay on the abyss,
+because those paint the splash and the status bar, which sit against `.ds-app`
+rather than against the bar.
 
 | File | Size | Notes |
 |---|---|---|
@@ -481,7 +489,26 @@ masters are the source. The PNGs are rasterised from them.
 | `public/icons/icon-512-maskable.png` | 512×512 | `purpose: maskable`. Artwork inside the centre 80% circle so Android can crop to any shape. |
 | `public/icons/badge-72.png` | 72×72 | notification badge, Android status bar. **Monochrome white on transparent**: the OS tints it; colour is discarded. |
 | `app/apple-icon.png` | 180×180 | iOS home screen. Opaque, square, no transparency and no pre-rounded corners: iOS applies the mask. Next.js serves it from `app/` automatically. |
-| `app/favicon.ico` | multi-size | 16/32/48/64/256 in one file. |
+
+| `app/favicon.ico` | 16, 32, 48 | Generated. BMP inside ICO, not PNG inside ICO: PNG is smaller and only decodes from Vista onward, and the whole reason to ship a `.ico` is the browsers that will not read the SVG. |
+
+**Every raster file above is written by `node scripts/build-icons.mjs`**, which
+takes no dependency: Node ships `zlib`, the only hard part of a PNG, and an ICO
+is a header followed by bitmaps.
+
+**That script is the point, more than the artwork is.** The previous set was
+described as "a placeholder sun mark generated programmatically" and the
+generator was never committed, so the icons could not be regenerated and drifted
+from the design system the moment it changed. They were still the placeholder
+months later for exactly that reason.
+
+**`favicon.ico` briefly went away and came back, and the detour is worth
+knowing.** Next emits a `<link>` for both `favicon.ico` and `icon.svg` when both
+exist, and browsers take the `.ico`, so a stale one silently overrides a new
+SVG. Deleting it was the quickest way to see the new mark; generating it from
+the same geometry is the durable answer, because now the two cannot disagree.
+
+Favicons are cached hard: a change needs a hard reload, and sometimes a new tab.
 
 **Three rules the masters encode, each of which is a way to get this wrong:**
 

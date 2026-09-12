@@ -127,11 +127,12 @@ a missing string.
 
 ### The audit of 11 September
 
-Seven findings, none of them a failing test — the suite is green, which is why
-the audit was worth running. Full reasoning and file/line citations in
-[`audit-2026-09-11.md`](audit-2026-09-11.md).
+Nine findings, only one of them a live defect, and the suite was green
+throughout — which is why the audit was worth running at all. Full reasoning and
+file/line citations in [`audit-2026-09-11.md`](audit-2026-09-11.md).
 
-**Done, and unverified — nothing below has been through a run:**
+**Done, and verified: typecheck, eslint, build and the full suite are green,
+and the mobile fixes were checked on a device.**
 
 - ✅ **`e2e/ui.ts` now matches `:is(p, span, li)[role="alert"]`.** It matched `p`
   alone, and the port had introduced a `<span>`, an `<li>` and a second
@@ -163,39 +164,37 @@ the audit was worth running. Full reasoning and file/line citations in
 
 **Open, in the order worth doing:**
 
-1. **Verify the above**: `npm run build` is the one that catches a server/client
-   boundary mistake in the two new client components.
-2. **Undeploy the `export-data` Edge Function** — decided below, needs one CLI
-   command and a `git rm`.
-3. **58 actions, 2 unit tests.** No cheap layer, so every assertion costs a
+1. **58 actions, 2 unit tests.** No cheap layer, so every assertion costs a
    browser, a Supabase round trip and a rate-limit token. `lib/today-gate.ts`,
    `lib/legal.ts` and `lib/supabase/checkin-date.ts` are pure and only reachable
    through a browser today.
 
-### `export-data` goes — decided 11 September
+### `export-data` is gone — done 11 September
 
-It duplicates `app/(app)/settings/export/route.ts`: same RPC, different filename
-stamp, `verify_jwt: true`, deployed and **ACTIVE**, never updated since it was
-created, on no cron schedule, and **linked from nothing in the app**. Every other
-Edge Function has a caller — `delete-account` from the settings action,
+**Undeployed and removed from the repo.** It duplicated
+`app/(app)/settings/export/route.ts`: same RPC, different filename stamp,
+`verify_jwt: true`, deployed and ACTIVE, never updated since it was created, on
+no cron schedule, and **linked from nothing in the app**. Every other Edge
+Function has a caller — `delete-account` from the settings action,
 `purge-expired-photos` and `send-digest-push` from `cron.job`.
 
 **Migration 113 sharpened this rather than settling it.** The RPC was broken, so
-the duplicate was a dead endpoint; now it works, so it is a live second route to
-the same personal data — one nothing tests and nothing documents. Two
-implementations of a promise `/support` publishes is one too many, and the one to
-keep is the one the UI links to and the suite now downloads.
+the duplicate was a dead endpoint; now it works, so it would have been a live
+second route to the same personal data, one nothing tests and nothing documents.
+Two implementations of a promise `/support` publishes is one too many, and the
+one kept is the one the UI links to and the suite now downloads.
 
-```
-npx supabase functions delete export-data --project-ref wyuadcnrxisqmzygzhzd
-git rm -r supabase/functions/export-data
-```
+### The icon
 
-### The icon, and the PNGs still to rasterise
-
-**The artwork is `SunMark` on `--ds-abyss`**, and the SVG masters are in the
+**The artwork is the navbar, shrunk**: a flame `SunMark` on
+`--ds-blue-fantastic`, `.ds-navbar`'s own surface. The SVG masters are in the
 repo: `app/icon.svg` (Next serves it and writes the `<link>` itself),
 `public/icons/icon.svg`, `icon-maskable.svg` and `badge.svg`.
+
+**The abyss was the first attempt and was wrong.** It is the page behind the
+bar, nearly black, and a favicon on it vanishes into a tab strip of other dark
+favicons. The manifest's `theme_color` and `background_color` stay on the abyss
+because they paint the splash and status bar, which sit against `.ds-app`.
 
 Three things the masters encode that are easy to get wrong:
 
@@ -215,45 +214,78 @@ plain on a phone: Android paints `background_color` for the whole splash before
 the app renders a pixel, and `theme_color` sits behind the status bar all day.
 Both now `#0f1620`, as is `viewport.themeColor` in `app/layout.tsx`.
 
-**Still to do: rasterise six PNGs.** The SVGs are the source; every raster file
-is still the old placeholder mark, right in dimensions and wrong in artwork.
-This needs an image tool and deliberately adds no dependency:
+**Every raster icon is generated, by one command with no dependency:**
 
 ```
-npx --yes sharp-cli -i public/icons/icon.svg          -o public/icons/icon-192.png          resize 192 192
-npx --yes sharp-cli -i public/icons/icon.svg          -o public/icons/icon-512.png          resize 512 512
-npx --yes sharp-cli -i public/icons/icon-maskable.svg -o public/icons/icon-512-maskable.png resize 512 512
-npx --yes sharp-cli -i public/icons/badge.svg         -o public/icons/badge-72.png          resize 72 72
-npx --yes sharp-cli -i public/icons/icon.svg          -o app/apple-icon.png                 resize 180 180
+node scripts/build-icons.mjs
 ```
 
-`app/favicon.ico` is the sixth and wants a real `.ico` encoder rather than
-`sharp`; `app/icon.svg` already covers every browser that reads SVG, so the
-`.ico` only matters for old ones.
+It writes `icon-192`, `icon-512`, `icon-512-maskable`, `badge-72`,
+`app/apple-icon.png` and `app/favicon.ico`. Node ships `zlib`, which is the
+only hard part of a PNG, and an ICO is a header followed by bitmaps — so this
+is arithmetic rather than a supply chain, and `package.json` is untouched.
 
-**`app/apple-icon.png` and `app/favicon.ico` both already exist.** An earlier
-note here claimed the Apple icon was missing and that an installed iPhone was
-falling back to a screenshot. **That was wrong**, and wrong in an instructive
-way: the check used a glob of `app/**/apple-icon.png`, and `**/` requires at
-least one directory, so it cannot match a file sitting directly in `app/`. The
-file was there the whole time. A search that cannot match the thing it is
-looking for reports the same "not found" as a thing that is absent.
+**The previous set had no generator at all.** They were described as
+"a placeholder sun mark generated programmatically", the generator was never in
+the repo, and so the icons could not be regenerated and drifted from the design
+system the moment it changed. That is the actual reason this file exists.
+
+The script copies `RAY`, the eight rotations and the r=5.5 centre from
+`components/marks/marks.tsx`, and the two hexes from the palette. **Copied, not
+imported**: importing a `.tsx` into a plain Node script means a build step, and
+avoiding one is the point. Change the mark or the palette and re-run this.
+
+`app/favicon.ico` is generated as BMP-inside-ICO rather than PNG-inside-ICO.
+Both are legal and PNG is smaller, but it is only understood from Vista onward,
+and the whole reason to ship a `.ico` is the browsers that will not read
+`icon.svg`. A fallback needing a modern decoder is not a fallback.
+
+**`favicon.ico` went away and came back, and the detour is the lesson.** Next
+emits a `<link>` for both it and `icon.svg` when both exist, and browsers take
+the `.ico` — so a stale one silently overrode the new SVG and the tab kept
+showing the placeholder no matter what the vector said. Deleting it was the
+quickest way to see the new mark; generating it from the same geometry is the
+durable answer, because now the two cannot disagree.
+
+**Three corrections worth keeping, because each was confident and wrong.**
+
+An earlier note here said `app/apple-icon.png` was missing and an installed
+iPhone was falling back to a screenshot. The check used a glob of
+`app/**/apple-icon.png`, and `**/` requires at least one directory, so it cannot
+match a file sitting directly in `app/`. The file was there the whole time. **A
+search that cannot match what it is looking for reports the same "not found" as
+a thing that is absent.**
+
+The first run of the generator produced a baby-blue square with a red sun. The
+compositor un-premultiplied against the *average* alpha instead of the alpha
+*sum*, leaving every channel 16× too large, and `Buffer` truncated the overflow
+to eight bits: `#34485f` became `#4080F0` and `#ffb162` became `#F01020`. **An
+arithmetic slip in a rasteriser does not crash, it renders wrong**, and
+wrong-but-plausible passes a glance. `selfCheck()` now asserts two exact pixels
+before anything is written.
+
+And the icon was first drawn on `--ds-abyss`, the page background, when the
+brief said the navbar's. `.ds-navbar` is `--ds-blue-fantastic`. The abyss is
+nearly black, which is where a favicon vanishes into a row of other dark
+favicons — **the token was close enough in description to pass unchecked, which
+is the only kind of wrong token that survives.**
 
 ### Housekeeping
 
-- **`scripts/port-landing.mjs` should go.** It cloned the catalog's landing
-  verbatim for tranche 8 and has been run. **Re-running it now would overwrite
+- ✅ **`scripts/port-landing.mjs` removed.** It cloned the catalog's landing
+  verbatim for tranche 8 and had been run. **Re-running it would have overwritten
   the landing with the catalog version**, discarding the streak section, the
   example day, the working links and the `heading "Solarity"` that
-  `legal.spec.ts` asserts — all added deliberately after the clone. A one-shot
-  script that is destructive on its second run is worse than no script; the
-  reasoning it carries is preserved in `v1/design-port.md`.
-- **Three dated graph snapshots are tracked**: `graphify-out/2026-09-01`,
+  `legal.spec.ts` asserts — all added deliberately after the clone. **A one-shot
+  script that is destructive on its second run is worse than no script**; the
+  reasoning it carried is preserved in `v1/design-port.md`.
+- ✅ **Three dated graph snapshots removed**: `graphify-out/2026-09-01`,
   `2026-09-04`, `2026-09-10`, each a full `graph.json` alongside the current one.
   Four copies of the same artefact. `.gitignore`'s graphify rules were written
   against the root directory only, so each snapshot's `.graphify_root`,
-  `.graphify_analysis.json` and `.graphify_labels.json` walked past them — now
-  fixed with `**/`.
+  `.graphify_analysis.json` and `.graphify_labels.json` walked straight past
+  them. Now `**/`, because **a gitignore rule written against one directory
+  stops being true the moment the tool writes a second one.**
 - **Refresh the graph periodically**, not per commit, via `scripts/graph-freshness.mjs`.
 - **Wire the dev-only catalog route** through `pageExtensions` and verify `next build` excludes it.
 - **`lib/database.types.ts` is current as of migration 113.** Checked rather than

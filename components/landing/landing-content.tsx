@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic"
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { ExampleDigest } from "@/app/example-digest"
 import { Corners, Ticks } from "@/components/marks/accents"
 import {
@@ -82,10 +82,60 @@ const CIRCLE = [
   { id: "dee", label: "Dee", done: false },
 ] as const
 
+/**
+ * **`compact` described a device frame, and nothing described a phone.**
+ *
+ * In the catalog this component only ever rendered inside a preview that passed
+ * `compact` explicitly. `app/page.tsx` renders `<LandingContent />` with no
+ * props, so on the real site the flag is **permanently false** and every
+ * `compact ?` branch in this file is dead code on the one device most visitors
+ * arrive with.
+ *
+ * Three bugs, one cause. The navbar kept "How it works" and pushed Sign up off
+ * the right edge. The hero used the desktop scene, whose camera sits close
+ * enough that the sun fills a 390px viewport. `PhaseRow` stayed at 84px, which
+ * the comment beside it already said overflows 342px of usable width.
+ *
+ * So the flag now means what its branches always assumed: **phone layout**,
+ * whether that is a real phone or a frame pretending to be one.
+ *
+ * The breakpoint matches Tailwind's `sm`, because the navbar is handled in CSS
+ * rather than here (see below) and the two must agree. A media query rather
+ * than a resize listener: it fires on orientation change, costs nothing between
+ * changes, and is the thing actually being asked about.
+ */
+function useIsPhone() {
+  const [isPhone, setIsPhone] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)")
+    const sync = () => setIsPhone(mq.matches)
+    sync()
+    mq.addEventListener("change", sync)
+    return () => mq.removeEventListener("change", sync)
+  }, [])
+
+  return isPhone
+}
+
 export const LandingContent = ({ compact = false }: { compact?: boolean }) => {
   const [circle, setCircle] = useState<
     { id: string; label: string; done: boolean }[]
   >(() => CIRCLE.map((member) => ({ ...member })))
+
+  /**
+   * **`phone`, not `compact`, for anything whose value is a number.**
+   *
+   * The server cannot know the viewport, so this is false for one frame after
+   * hydration. That is fine for the two things using it: the hero canvas is a
+   * `ssr: false` dynamic import and has not mounted yet, and `PhaseRow` is far
+   * enough down the page to be off-screen at first paint.
+   *
+   * **Anything that would *flash* stays in CSS.** The navbar is the example,
+   * and it is why this hook is not simply used everywhere.
+   */
+  const isPhone = useIsPhone()
+  const phone = compact || isPhone
 
   const toggleMember = (id: string) =>
     setCircle((prev) =>
@@ -135,7 +185,9 @@ export const LandingContent = ({ compact = false }: { compact?: boolean }) => {
           scrim is all the composition there is.
         */}
         <div className="absolute inset-0 z-0" aria-hidden>
-          <SolarHero compact={compact} className="size-full" />
+          {/* `phone`: the pulled-back `COMPACT_SCENE` camera, which is what
+              keeps the sun from filling a 390px viewport entirely. */}
+          <SolarHero compact={phone} className="size-full" />
         </div>
 
         <div
@@ -202,8 +254,20 @@ export const LandingContent = ({ compact = false }: { compact?: boolean }) => {
             className="flex shrink-0 items-center gap-5 sm:gap-7"
             aria-label="Primary"
           >
-            {/* Hidden on a phone: three items in 390px leaves the wordmark no
-                room, and the anchor is the one a scroll reaches anyway. */}
+            {/*
+              **Hidden on a phone, in CSS rather than in JS.**
+
+              Three items in 390px leaves the wordmark no room and pushes Sign
+              up off the right edge, which is what it was doing. The anchor is
+              the one a scroll reaches anyway, so losing it costs nothing.
+
+              `hidden sm:inline` rather than the `phone` flag, because this is
+              the one place a flag would be visible: the server renders the
+              desktop bar, so the link would appear and then vanish a frame
+              later, at the top of the page, where it is the first thing seen.
+              CSS decides before the first paint. The 639px breakpoint in
+              `useIsPhone` is Tailwind's `sm` for exactly this reason.
+            */}
             {compact ? null : (
               <a
                 /*
@@ -213,7 +277,7 @@ export const LandingContent = ({ compact = false }: { compact?: boolean }) => {
                   act begins at its own top edge.
                 */
                 href="#how-it-works"
-                className="ds-link ds-font-body pointer-events-auto text-sm"
+                className="ds-link ds-font-body pointer-events-auto hidden text-sm sm:inline"
                 data-ds="ds-link ds-font-body"
               >
                 How it works
@@ -236,13 +300,32 @@ export const LandingContent = ({ compact = false }: { compact?: boolean }) => {
             >
               Sign in
             </Link>
+            {/*
+              **The width floor is the leak, more than the padding is.**
+
+              `--ds-cta-min: 7rem` reserves 112px for a label that needs about
+              55, and `px-5` adds 40 on top. On a 390px viewport, minus a 32px
+              gutter each side, the bar has ~326px for a wordmark, two links and
+              this — so the button was claiming a third of the row to hold two
+              words, and Sign up went over the right edge.
+
+              Both are relaxed below `sm` and restored above it, **through
+              custom properties rather than `px-*`**. The `px-5` that used to sit
+              here never did anything: `design-system.css` is unlayered and
+              Tailwind's utilities are not, so `.ds-cta`'s own padding outranked
+              it. `--ds-cta-pad-x` is the override that works, and it is now
+              read the same way `--ds-cta-min` always has been.
+
+              In the className rather than the `style` prop because an inline
+              style cannot carry a breakpoint, and this needs one.
+
+              The floor is lowered, not removed. It exists so a label change
+              cannot resize the button, and 5rem still does that at this size.
+            */}
             <Link
               href="/auth/sign-up"
-              className="ds-cta ds-bg-flame ds-text-on-light ds-font-body pointer-events-auto px-5 py-2 text-[0.8rem]"
+              className="ds-cta ds-bg-flame ds-text-on-light ds-font-body pointer-events-auto text-[0.8rem] [--ds-cta-min:5rem] [--ds-cta-pad-x:0.875rem] [--ds-cta-pad-y:0.5rem] sm:[--ds-cta-min:7rem] sm:[--ds-cta-pad-x:1.25rem]"
               data-ds="ds-cta ds-bg-flame ds-text-on-light ds-font-body"
-              /* Narrower than a page CTA: the floor exists to stop labels
-                 resizing a button, not to make every button the same width. */
-              style={{ ["--ds-cta-min" as string]: "7rem" }}
             >
               Sign up
             </Link>
@@ -554,13 +637,13 @@ export const LandingContent = ({ compact = false }: { compact?: boolean }) => {
                  beside it rather than the same statement twice. A phone has
                  no such headroom — four marks at 84 plus gaps overflow 342px
                  of usable width, and the row must not wrap. */
-              size={compact ? 44 : 84}
+              size={phone ? 44 : 84}
               onToggle={toggleMember}
               /* Flame, because these are suns. The band's own text is
                  Palladian, and Palladian discs read as moons — which is the
                  opposite object. */
               className={`ds-text-flame ${
-                compact ? "gap-5" : "justify-end gap-7"
+                phone ? "gap-5" : "justify-end gap-7"
               }`}
             />
             <p

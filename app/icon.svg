@@ -1,21 +1,33 @@
 <!--
-  The app icon: `SunMark` on the abyss.
+  The app icon: the navbar, shrunk. A flame `SunMark` on `--ds-blue-fantastic`.
 
   Next serves this at /icon.svg and writes the <link rel="icon"> itself, so
   there is no tag to keep in sync.
+
+  ## Blue-fantastic, not the abyss, and the first version got that wrong
+
+  `.ds-navbar` is `--ds-blue-fantastic` carrying a flame `SunMark`, and that
+  pairing is what a person already associates with Solarity from using it. The
+  abyss is the *page* behind the bar; at #0f1620 it is nearly black, which is
+  exactly where a favicon disappears into a row of other dark favicons.
+
+  `theme_color` and `background_color` in `app/manifest.ts` stay on the abyss,
+  and that is not an inconsistency: those paint the splash and the status bar,
+  which sit against `.ds-app` rather than against the bar, and on a phone the
+  bar is hidden below `md` anyway.
 
   ## The hexes are inlined, and that is not laziness
 
   `components/marks/marks.tsx` says "nothing here hardcodes a hex", and it is
   right: a mark inside the app inherits `currentColor` and the palette stays in
   `design-system.css`. **A standalone asset cannot do that.** There is no
-  cascade reaching a favicon, so `var(--ds-abyss)` would resolve to nothing and
-  the centre would punch a hole straight through the icon.
+  cascade reaching a favicon, so a `var(--ds-*)` here would resolve to nothing
+  and the centre would punch a hole straight through the icon.
 
   Same shape as the Fraunces bug: the CSS moves, the thing that resolves it does
   not. So these two values are copies, and they are the only copies —
-  #0f1620 is --ds-abyss, #ffb162 is --ds-burning-flame. Change the tokens and
-  this file needs changing with them.
+  #34485f is --ds-blue-fantastic, #ffb162 is --ds-burning-flame. Change the
+  tokens and this file needs changing with them.
 
   ## The geometry is `SunMark`'s, scaled rather than redrawn
 
@@ -24,7 +36,7 @@
   corner radius iOS applies without asking.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" fill="#0f1620"/>
+  <rect width="512" height="512" fill="#34485f"/>
   <g transform="translate(256,256) scale(4)">
     <g fill="#ffb162">
       <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z"/>
@@ -39,6 +51,6 @@
     <!-- The hollow centre. It is what stops the mark reading as a bullet point,
          and it is filled with the background rather than left transparent so the
          icon survives being composited onto a light surface. -->
-    <circle r="5.5" fill="#0f1620" stroke="#ffb162" stroke-width="2"/>
+    <circle r="5.5" fill="#34485f" stroke="#ffb162" stroke-width="2"/>
   </g>
 </svg>

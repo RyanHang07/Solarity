@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { disablePush, enablePush, pushEnabledHere, pushSupported } from "@/lib/push-client"
 import { PushDenied } from "@/components/push-denied"
-import { SecondaryButton } from "@/components/ui/button"
+import { PrimaryButton, SecondaryButton } from "@/components/ui/button"
 
 type ToggleState = "loading" | "on" | "off" | "denied" | "unsupported" | "unknown"
 
@@ -194,14 +194,36 @@ export function PushToggle() {
         </div>
       ) : null}
 
+      {/*
+        **Flame to turn them on, panel to turn them off, and the asymmetry is
+        the point.**
+
+        It was `SecondaryButton` either way, which made "Turn on notifications"
+        — the one thing this component exists to get somebody to do, and the
+        thing iOS only offers once per install — look like a muted afterthought
+        sitting on a panel.
+
+        Turning them *off* is a step back, which is exactly what
+        `SecondaryButton` is for. Painting both the same colour says the two
+        directions are equivalent, and they are not: one is the feature working
+        and the other is the escape hatch.
+
+        Selecting the component rather than branching the whole element, so the
+        label logic below stays written once.
+      */}
       {state === "on" || state === "off" ? (
-        <SecondaryButton onClick={state === "on" ? turnOff : turnOn} disabled={busy}>
-          {busy
-            ? "Working…"
-            : state === "on"
-              ? "Turn off notifications"
-              : "Turn on notifications"}
-        </SecondaryButton>
+        (() => {
+          const Button = state === "on" ? SecondaryButton : PrimaryButton
+          return (
+            <Button onClick={state === "on" ? turnOff : turnOn} disabled={busy}>
+              {busy
+                ? "Working…"
+                : state === "on"
+                  ? "Turn off notifications"
+                  : "Turn on notifications"}
+            </Button>
+          )
+        })()
       ) : null}
 
       {message ? (

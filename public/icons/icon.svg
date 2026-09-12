@@ -6,11 +6,13 @@
   rasterised from — see docs/build-plan.md for the command. Keeping them as two
   files means regenerating the PNGs never touches the favicon, and vice versa.
 
-  #0f1620 is --ds-abyss, #ffb162 is --ds-burning-flame, inlined because nothing
-  resolves a CSS variable inside a standalone asset.
+  #34485f is --ds-blue-fantastic (the `.ds-navbar` surface, not the abyss behind
+  it) and #ffb162 is --ds-burning-flame, both inlined because nothing resolves a
+  CSS variable inside a standalone asset. `app/icon.svg` argues the colour
+  choice at length.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" fill="#0f1620"/>
+  <rect width="512" height="512" fill="#34485f"/>
   <g transform="translate(256,256) scale(4)">
     <g fill="#ffb162">
       <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z"/>
@@ -22,6 +24,6 @@
       <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z" transform="rotate(270)"/>
       <path d="M0,-6 C3,-14 4,-24 0,-34 C-4,-24 -3,-14 0,-6 Z" transform="rotate(315)"/>
     </g>
-    <circle r="5.5" fill="#0f1620" stroke="#ffb162" stroke-width="2"/>
+    <circle r="5.5" fill="#34485f" stroke="#ffb162" stroke-width="2"/>
   </g>
 </svg>

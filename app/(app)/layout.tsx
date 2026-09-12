@@ -206,10 +206,17 @@ export default async function AppLayout({
         speak of, since its previews render inside a device frame that would lie
         to one.
 
-        The safe-area *top* inset is already paid on `body` in `globals.css`,
-        for every route including the ones outside this layout.
+        **Every safe-area inset is already paid on `body` in `globals.css`, not
+        just the top one.** This calc used to add `env(safe-area-inset-bottom)`
+        as well, and the comment here named only the top — which is how it went
+        unnoticed. Counting it again reserved an extra 34px of empty scroll at
+        the end of every list on an iPhone.
+
+        Three places were paying one inset: `body`, this padding, and
+        `.ds-tabbar` itself. The bar was the visible one, floating above a band
+        of dead abyss; this was the quiet one.
       */}
-      <main className="ds-container flex flex-1 flex-col p-4 pb-[calc(var(--ds-tabbar-height)+env(safe-area-inset-bottom,0px)+1rem)] md:px-8 md:pb-6 md:pt-6">
+      <main className="ds-container flex flex-1 flex-col p-4 pb-[calc(var(--ds-tabbar-height)+1rem)] md:px-8 md:pb-6 md:pt-6">
         {children}
       </main>
 

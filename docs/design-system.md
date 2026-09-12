@@ -21,6 +21,13 @@ Read this before writing markup. The v1 port that produced it is recorded in
    class, which is why it once overrode every parent's `items-*`.
 6. **The CSS moves between repos; the fonts do not.** A missing `next/font`
    declaration falls through to a serif that looks almost deliberate.
+7. **A Tailwind utility cannot override a `ds-*` class.** This file is imported
+   unlayered and Tailwind v4's utilities sit in `@layer utilities`, so
+   **unlayered wins whatever the source order**. `px-4` beside `ds-cta` does
+   nothing. Where a token is meant to be tunable per instance it reads a
+   variable with the current value as its fallback — `--ds-cta-min`,
+   `--ds-cta-pad-x`, `--ds-cta-pad-y` — and that is the override to reach for.
+   Add a variable rather than adding a utility and hoping.
 
 ## The type scale
 

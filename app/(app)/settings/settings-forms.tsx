@@ -10,7 +10,7 @@ import {
   updateStatsVisibility,
   updateNotificationPrefs,
 } from "@/app/actions/settings"
-import { SecondaryButton } from "@/components/ui/button"
+import { PrimaryButton } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/check"
 import { FormError } from "@/components/ui/field"
 import type { ActionResult } from "@/lib/errors"
@@ -21,13 +21,24 @@ import type { ActionResult } from "@/lib/errors"
  * four pixels below it — the misalignment that reads as sloppiness rather than
  * as a measurement, and the one this whole settings screen used to show four
  * times over.
+ *
+ * **Primary, not secondary, and the reasoning had one word wrong.**
+ * `SecondaryButton` is for "a second way in, or a step back. Never competes
+ * with the primary" — and the worry here was six flame Saves down one screen
+ * all shouting at once. But these forms do not share a primary to compete
+ * with: each is its own landmark with one control, and the person reaches it by
+ * deciding to change that one thing. A Save that is the only action in its form
+ * *is* that form's primary, and rendering it on a panel made every settings
+ * form look like it had a greyed-out submit.
+ *
+ * They do not compete, because no two are ever the answer to the same question.
  */
 function Submit({ label, pendingLabel }: { label: string; pendingLabel: string }) {
   const { pending } = useFormStatus()
   return (
-    <SecondaryButton type="submit" disabled={pending} inline>
+    <PrimaryButton type="submit" disabled={pending} inline>
       {pending ? pendingLabel : label}
-    </SecondaryButton>
+    </PrimaryButton>
   )
 }
 

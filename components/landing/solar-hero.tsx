@@ -333,7 +333,27 @@ export const SolarHero = ({
       canvas.style.width = "100%"
       canvas.style.height = "100%"
       canvas.style.display = "block"
-      canvas.style.touchAction = "none"
+      /**
+       * **`pan-y`, not `none`, and `none` made the landing page unscrollable.**
+       *
+       * This canvas is `absolute inset-0` inside a `min-h-[100dvh]` hero, so on
+       * a phone it covers the entire first screen. `touch-action: none` tells
+       * the browser to send every touch here and never scroll, which is correct
+       * for the app's galaxy — that one pans and zooms and owns the gesture —
+       * and catastrophic here: the first screen is the whole screen, so a
+       * visitor's first swipe went into rotating a decoration and the page
+       * appeared frozen.
+       *
+       * `pan-y` keeps vertical scrolling with the browser and leaves horizontal
+       * movement to the drag handler below, which is the axis it actually uses.
+       * The scene still rotates under a finger; the page still scrolls under
+       * one.
+       *
+       * Worth stating because the two canvases look alike and the correct value
+       * is opposite in each: **an interactive surface that fills the viewport
+       * must give one axis back, or it is a scroll trap.**
+       */
+      canvas.style.touchAction = "pan-y"
       canvas.style.cursor = "grab"
       canvas.setAttribute("aria-hidden", "true")
 

@@ -1104,7 +1104,21 @@ button.ds-phase:focus-visible {
   background-color: color-mix(in srgb, var(--ds-abyss) 88%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+
+  /*
+    **No `padding-bottom: env(safe-area-inset-bottom)` here, and it used to have
+    one.** `globals.css` pays every inset once, on `body`, deliberately — its
+    own comment says "a rule per layout is a rule someone forgets on the next
+    one". This was that rule, on a component instead of a layout.
+
+    The slot above is `position: sticky; bottom: 0`, so it sticks to the bottom
+    of **body's content box**, which is already one inset above the true
+    viewport edge. Adding the inset again pushed the labels a second 34px up on
+    an iPhone, and the bar floated with a band of dead abyss beneath it.
+
+    Neither rule was wrong alone. Paying an inset is only safe where nothing
+    else already has, and on this page something already had.
+  */
 }
 
 /*
@@ -1302,7 +1316,28 @@ button.ds-phase:focus-visible {
   cursor: pointer;
   border: none;
   border-radius: 2px;
-  padding: 0.75rem 1.35rem;
+
+  /**
+   * **Variables, because `px-4` on a `.ds-cta` does nothing and fourteen call
+   * sites write one anyway.**
+   *
+   * `design-system.css` is imported unlayered; Tailwind v4 emits utilities into
+   * `@layer utilities`, and **unlayered declarations beat layered ones whatever
+   * the source order**. So a plain `padding` here outranked every `px-*` and
+   * `py-*` in the app, and every CTA rendered at this one size while its
+   * className claimed otherwise. Nothing failed, which is why it lasted: the
+   * default is a reasonable size, so the dead classes looked like they worked.
+   *
+   * Reading them through variables restores the override without changing a
+   * single rendered pixel — the fallbacks are the values that were already
+   * winning. Override per instance with `--ds-cta-pad-x` / `--ds-cta-pad-y`,
+   * the same mechanism `--ds-cta-min` below already uses, and the only one that
+   * survives the layer rule.
+   *
+   * `.ds-cta[data-inline]` still zeroes `padding-block` afterwards: higher
+   * specificity, unaffected by this.
+   */
+  padding: var(--ds-cta-pad-y, 0.75rem) var(--ds-cta-pad-x, 1.35rem);
 
   /**
    * **A floor, so a label change cannot resize the button.**
